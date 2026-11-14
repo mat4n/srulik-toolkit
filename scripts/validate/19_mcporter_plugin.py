@@ -1,7 +1,7 @@
 # mcporter-plugin: manifests, catalog entries, hook wiring, skill contracts, and
 # the behavior test (scripts/test-mcporter-plugin.js) against a fake mcporter.
 mcp_plugin = root / "plugins" / "mcporter-plugin"
-mcp_version = "0.1.3"
+mcp_version = "0.1.4"
 for harness in ["claude", "codex"]:
     data = json.loads((mcp_plugin / f".{harness}-plugin" / "plugin.json").read_text(encoding="utf-8"))
     if data.get("name") != "mcporter-plugin" or data.get("version") != mcp_version or data.get("license") != "MIT":
@@ -20,6 +20,9 @@ for hooks, failure in [(mcp_hooks, "PostToolUseFailure"), (codex_hooks, "PostToo
     for event, script in [("SessionStart", "session-hint.js"), ("PreToolUse", "redirect-mcp.js"), (failure, "auth-notice.js")]:
         if script not in hooks[event][0]["hooks"][0]["command"] or not (mcp_plugin / "hooks" / script).is_file():
             raise SystemExit(f"mcporter-plugin {event} hook must run hooks/{script}")
+# Under Code Mode an unanswered PreToolUse hook refuses the call; these hooks only advise.
+if any(h["hooks"][0].get("onFailure") != "continue" for h in (e[0] for e in mcp_hooks.values())):
+    raise SystemExit("mcporter-plugin Claude hooks must set onFailure: continue")
 if "config\", \"list\", \"--json\"" not in (mcp_plugin / "scripts" / "mcporter-common.js").read_text(encoding="utf-8"):
     raise SystemExit("session hint must read `mcporter config list --json`")
 
