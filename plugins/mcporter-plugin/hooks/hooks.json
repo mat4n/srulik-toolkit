@@ -7,7 +7,8 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/session-hint.js\"",
-            "timeout": 10
+            "timeout": 10,
+            "onFailure": "continue"
           }
         ]
       }
@@ -19,7 +20,8 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/redirect-mcp.js\"",
-            "timeout": 10
+            "timeout": 10,
+            "onFailure": "continue"
           }
         ]
       }
@@ -31,7 +33,8 @@
           {
             "type": "command",
             "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/auth-notice.js\"",
-            "timeout": 10
+            "timeout": 10,
+            "onFailure": "continue"
           }
         ]
       }
