@@ -103,7 +103,12 @@ For a web interface built with HTML, CSS, or client-side JavaScript, when the
 `modern-web-guidance` skill is installed, search and retrieve its guides
 for the platform features behind each reviewed component, such as dialogs,
 popovers, forms, scroll effects, and dark mode, and check accessibility and
-browser-support fallbacks against them. A guide rule supports a finding; user impact still sets severity.
+browser-support fallbacks against them. Read the guide files bundled with the
+installed skill, once per distinct feature, from the `guides/` directory beside
+its `SKILL.md`, with read-only file tools; reuse
+guides a calling review already retrieved. Do not run its `npx` command, which
+downloads a package and sends usage telemetry, unless the user authorized that.
+A guide rule supports a finding; user impact still sets severity.
 Without that skill, list the platform-feature check as an evidence gap. Skip
 both for a native or other non-web interface.
 
