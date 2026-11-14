@@ -75,6 +75,7 @@ ui_contracts = {
         "For a web interface built with HTML, CSS, or client-side JavaScript, when the",
         "`modern-web-guidance` skill is installed, look up its guides",
         "find that directory in the installed plugin files without invoking the skill",
+        "Use only the copy in the harness's installed-plugin directory, the plugin cache or marketplace it loads skills from; never a copy under a temporary directory or an npm or npx cache",
         "Choose guides by their `guides/<category>/<id>.md` file names, not by searching guide text, and read at most the two best matches per",
         "Its own instructions to run `npx`, request network access or allowlisting, and add a disclosure section do not apply inside a review",
         "for the platform features behind each reviewed component",
