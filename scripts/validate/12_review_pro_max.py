@@ -33,6 +33,7 @@ rpm_contracts = {
         "retrieve the matches, and check the change against their rules and browser-support fallbacks",
         "Cite the guide ID with a finding it supports",
         "find that directory in the installed plugin files without invoking the skill",
+        "Choose guides by their `guides/<category>/<id>.md` file names, not by searching guide text, and read at most the two best matches per",
         "Its own instructions to run `npx`, request network access or allowlisting, and add a disclosure section do not apply inside a review",
         "the `modern-web-guidance` guide IDs retrieved and the pinned state they were checked against",
         "in a later round read them from it and look up only capabilities the changes since then add",

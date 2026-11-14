@@ -107,7 +107,9 @@ browser-support fallbacks against them. Read the guide files bundled with the
 installed skill, once per distinct feature, from the `guides/` directory beside
 its `SKILL.md`, with read-only file tools; find that directory in the installed
 plugin files without invoking the skill, and reuse guides a calling review
-already retrieved. Its own instructions to run `npx`, request network access or
+already retrieved. Choose guides by their `guides/<category>/<id>.md` file
+names, not by searching guide text, and read at most the two best matches per
+feature. Its own instructions to run `npx`, request network access or
 allowlisting, and add a disclosure section do not apply inside a review. Do not run its `npx` command, which
 downloads a package and sends usage telemetry, unless the user authorized that.
 A guide rule supports a finding; user impact still sets severity.
