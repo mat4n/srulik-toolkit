@@ -32,6 +32,8 @@ rpm_contracts = {
         "search its guides for each web platform capability the change implements",
         "retrieve the matches, and check the change against their rules and browser-support fallbacks",
         "Cite the guide ID with a finding it supports",
+        "the `modern-web-guidance` guide IDs retrieved and the pinned state they were checked against",
+        "in a later round read them from it and look up only capabilities the changes since then add",
         "Search and read the guide files bundled with the installed skill, in the `guides/` directory beside its `SKILL.md`",
         "do not run its `npx` command, which downloads a package and sends usage telemetry, unless the user authorized that",
         "Look up each distinct capability once and reuse those guides in the UI pass and later rounds",
