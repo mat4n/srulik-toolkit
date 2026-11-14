@@ -99,6 +99,12 @@ impact; otherwise treat it as an optional aesthetic suggestion, omitted unless
 requested. Do not apply its redesign passes, image generation,
 snapshot or story tooling; they are not bundled or authorized by this review.
 
+When the `modern-web-guidance` skill is installed, search and retrieve its guides
+for the platform features behind each reviewed component, such as dialogs,
+popovers, forms, scroll effects, and dark mode, and check accessibility and
+browser-support fallbacks against them. A guide rule supports a finding; user impact still sets severity.
+Without that skill, list the platform-feature check as an evidence gap.
+
 For every in-scope story in an implemented interface, exercise its acceptance
 criteria and relevant alternate, failure, and recovery paths in the running
 interface. Use the project's existing validation pipeline where available;
