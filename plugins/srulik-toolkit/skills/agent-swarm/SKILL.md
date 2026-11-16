@@ -208,8 +208,10 @@ as a second opinion.
 
 ## Graph mode
 
-Every swarm runs here. A graph costs one child per agent node instance, so
-choose the `cheap` tier for bounded mechanical nodes. A graph is a YAML file;
+Every swarm runs here. A graph costs one child per agent node instance. Leave
+`pick.tier` unset (`standard`), or use `strong` for reviews, plans, code and
+other judgment work, as the bundled graphs do. Use `cheap` only when the owner
+asks for it. A short task is not a cheap task. A graph is a YAML file;
 read [graph spec](references/graph-spec.md) for its keys, the YAML subset, loops,
 parent tasks, model resolution, and the run log. Two graphs are bundled:
 `graphs/task.yaml` runs one task from the request to its terminal state, and
