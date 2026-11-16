@@ -56,6 +56,10 @@ rpm_contracts = {
         "When that comparison is unavailable, rerun the pass",
         "A skipped pass carries that verdict into this round's coverage",
         "each reviewer's model and score, the UI pass's coverage verdict or skip reason",
+        "One seat is always the latest Claude Opus model, even when it shares the author's vendor",
+        "report that seat as a coverage limit instead of substituting",
+        "When the user named three models and none is Claude Opus, seat it as a fourth reviewer",
+        "A requested quick review uses one pass by one reviewer, not a panel; the seat rules in this paragraph do not apply to it",
     ],
     "code-reviewer.md": [
         "round number, prior findings with their status",
@@ -76,6 +80,9 @@ rpm_contracts = {
         "`task_cancel`",
         "mode `0700` on POSIX",
         "[code-reviewer.md](../code-reviewer.md)",
+        "Seat the latest Claude Opus model on any instance where `canRunChildTask` is true",
+        "the Claude Opus seat is a fourth seat",
+        "have not been run live through these tools",
     ],
 }
 for rpm_relative, rpm_phrases in rpm_contracts.items():
@@ -84,10 +91,17 @@ for rpm_relative, rpm_phrases in rpm_contracts.items():
         if rpm_phrase not in rpm_text:
             raise SystemExit(f"review-pro-max {rpm_relative} missing contract: {rpm_phrase}")
 
-rpm_core = (rpm_dir / "SKILL.md").read_text(encoding="utf-8").replace("- T3 Code: [references/t3-code.md](references/t3-code.md)", "")
+# The core names one model on purpose: the owner requires a Claude Opus seat on
+# every full panel. Exempt only that phrase, and pin its count so a new mention fails.
+rpm_core_raw = (rpm_dir / "SKILL.md").read_text(encoding="utf-8")
+if rpm_core_raw.count("Claude Opus") != 3:
+    raise SystemExit("review-pro-max SKILL.md must name Claude Opus only in the panel rule")
+rpm_core = rpm_core_raw.replace("- T3 Code: [references/t3-code.md](references/t3-code.md)", "").replace("Claude Opus", "")
 for rpm_name, rpm_surface in [("SKILL.md", rpm_core), ("code-reviewer.md", (rpm_dir / "code-reviewer.md").read_text(encoding="utf-8"))]:
     if re.search(r"\b(?:Claude|Codex|Cursor|T3|Opus|GPT|Gemini|Grok)\b|t3_[a-z_]+|delegate_task|orchestrator_capabilities|\$TMPDIR|%TEMP%", rpm_surface):
         raise SystemExit(f"review-pro-max {rpm_name} must stay host-agnostic")
 for rpm_retired in ["Avoid arbitrary reviewer counts", "for a consequential change, use one strong model from each of several providers"]:
     if rpm_retired in " ".join(rpm_core.split()):
         raise SystemExit(f"review-pro-max SKILL.md still contains retired text: {rpm_retired}")
+if "one seat always the latest Claude Opus model" not in " ".join((root / "docs" / "reference.md").read_text(encoding="utf-8").split()):
+    raise SystemExit("docs/reference.md must name the review-pro-max Claude Opus seat")

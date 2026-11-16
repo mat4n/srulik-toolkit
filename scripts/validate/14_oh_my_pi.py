@@ -7,7 +7,7 @@ omp_contracts = {
     ],
     "review-pro-max/references/oh-my-pi.md": [
         "# review-pro-max on Oh My Pi", 'read("skill://<name>")', "xd://mcp__t3_code_delegate_task",
-        "Seat user-named models as the core says", "report the empty seats", "unverified",
+        "Seat Claude Opus and user-named models as the core says", "report the empty seats", "unverified",
     ],
     "ui-ux-review/references/oh-my-pi.md": [
         "# UI UX review on Oh My Pi", "replaces the untested-host gate", "`read` on a local image path", "| Clarification | `ask` |", "xd://mcp__t3_code_<tool>", "unverified",

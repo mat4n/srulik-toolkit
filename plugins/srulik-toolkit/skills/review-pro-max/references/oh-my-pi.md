@@ -21,7 +21,7 @@ An unprefixed `xd://<tool>` returns `No such tool`; use the `mcp__t3_code_` name
 ## OMP terminal without T3 Code
 
 OMP's own `task` children run on the session's configured models, which may
-all come from one vendor. Seat user-named models as the core says. Fill open
+all come from one vendor. Seat Claude Opus and user-named models as the core says. Fill open
 seats only from vendors not yet seated, and report the empty seats as a
 coverage limit.
 
