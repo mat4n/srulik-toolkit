@@ -59,7 +59,7 @@ rpm_contracts = {
         "One seat is always the latest Claude Opus model, even when it shares the author's vendor",
         "report that seat as a coverage limit instead of substituting",
         "When the user named three models and none is Claude Opus, seat it as a fourth reviewer",
-        "A requested quick review uses one pass",
+        "A requested quick review uses one pass by one reviewer, not a panel; the seat rules in this paragraph do not apply to it",
     ],
     "code-reviewer.md": [
         "round number, prior findings with their status",
