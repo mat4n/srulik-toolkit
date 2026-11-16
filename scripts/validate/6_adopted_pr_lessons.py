@@ -73,7 +73,7 @@ tstack_contracts = {
     "create-pr publishing": (create_pr_publish, ["Never force-push any other branch", "create through REST, which has a separate quota", "`--force-with-lease=<branch>:<that sha>`", "integrate them first", "or merge it when the repository prefers merge commits", "on the resulting state", "-F draft=<true|false>", "gh api --hostname <host> repos/"]),
     "pr-babysit GitHub": ((skill_root / "pr-babysit" / "references" / "github.md").read_text(encoding="utf-8"), ["--hostname <host>", "CodeRabbit is advisory", "REST has a separate quota", "legacy combined status", "cannot be read, report that as a blocker instead of `READY`"]),
     "create-pr conventions": (pr_conventions, ["Open the body with the problem in the user's terms", "`Created with <model> in <harness>.`"]),
-    "review-pro-max": (review_pro_max, ["Prefer reviewers on models from a different provider than the author", "report an unavailable one instead of substituting", "is low unless evidence shows the intended case hits it"]),
+    "review-pro-max": (review_pro_max, ["One seat is always the latest Claude Opus model", "prefer reviewers on models from a different provider than the author", "report an unavailable one instead of substituting", "is low unless evidence shows the intended case hits it"]),
     "implement-plan scope": (" ".join(implement_plan.split()), ["unless evidence shows the changed flow or a supported caller reaches them", "If a round grew the diff, cut first", "Do not agree with a finding just to end the loop", "stays disputed after two replies, stop and show both sides"]),
     "resolving-merge-conflicts": (conflicts, ["needs a force push with a lease, which only that caller's authority allows"]),
 }

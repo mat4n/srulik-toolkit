@@ -14,7 +14,7 @@ The current thread owns the review. Panel reviewers run as child tasks of that t
 
 ## Choose the panel
 
-Read `orchestrator_capabilities`. Seat each model the user named on an instance that runs it. Fill each open seat with the latest flagship model from a vendor not yet seated, where `canRunChildTask` is true. A provider instance is not a vendor: a Claude model served through the Cursor instance is still a Claude seat. Use `search` when a named model is not in the short list. Skip disabled instances. Report a named model that no runnable instance offers instead of substituting.
+Read `orchestrator_capabilities`. Seat the latest Claude Opus model on any instance where `canRunChildTask` is true. Seat each model the user named on an instance that runs it; when the user named three models and none is Claude Opus, the Claude Opus seat is a fourth seat. Fill each open seat with the latest flagship model from a vendor not yet seated, where `canRunChildTask` is true. A provider instance is not a vendor: a Claude model served through the Cursor instance is still a Claude seat. Use `search` when a named model is not in the short list. Skip disabled instances. Report a named model that no runnable instance offers instead of substituting.
 
 ## Launch each round
 
@@ -30,4 +30,4 @@ Use the OS temporary directory: `$TMPDIR` on macOS, `/tmp` when `TMPDIR` is unse
 
 ## Verification status
 
-This mapping follows the tool contracts listed by `orchestrator_capabilities` and `delegate_task`. A two-round, three-vendor panel was run through these tools when this mapping was added. Other harnesses have no mapping and are untested.
+This mapping follows the tool contracts listed by `orchestrator_capabilities` and `delegate_task`. A two-round, three-vendor panel was run through these tools when this mapping was added. Other harnesses have no mapping and are untested. The Claude Opus seat and its fourth-seat rule were added later and have not been run live through these tools.
