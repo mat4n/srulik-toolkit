@@ -46,6 +46,7 @@ for (const f of ["hooks.json", "codex-hooks.json"]) {
 
 // SessionStart makes the session's Bash fail fast instead of waiting on a browser.
 const envFile = path.join(tmp, "claude-env");
-fs.writeFileSync(envFile, "");
-execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env: { ...env, CLAUDE_ENV_FILE: envFile }, encoding: "utf8", cwd: proj });
-assert.match(fs.readFileSync(envFile, "utf8"), /^export MCPORTER_OAUTH_NO_BROWSER=1$/m);
+fs.writeFileSync(envFile, "export OTHER=1\n");
+// Every resume reruns the hook on the same file; repeats must not grow it.
+for (let i = 0; i < 2; i++) execFileSync(process.execPath, [path.join(plugin, "hooks", "session-hint.js")], { env: { ...env, CLAUDE_ENV_FILE: envFile }, encoding: "utf8", cwd: proj });
+assert.equal(fs.readFileSync(envFile, "utf8"), "export OTHER=1\nexport MCPORTER_OAUTH_NO_BROWSER=1\n");
