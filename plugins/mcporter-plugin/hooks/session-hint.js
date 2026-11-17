@@ -88,8 +88,23 @@ function scripts() {
 // instead of opening a browser nobody watches and waiting 5 minutes; the
 // auth-notice hook then tells the user. Silent token refresh still works.
 // ponytail: Claude Code only (Codex has no env file); Codex relies on the skill rule.
+// Every resume reruns this on the same file, so drop the old line first: an
+// ever-growing file gets truncated mid-quote and breaks every Bash call.
 try {
-  if (process.env.CLAUDE_ENV_FILE) fs.appendFileSync(process.env.CLAUDE_ENV_FILE, "export MCPORTER_OAUTH_NO_BROWSER=1\n");
+  const file = process.env.CLAUDE_ENV_FILE;
+  if (file) {
+    // Only a missing file counts as empty; any other read error must not wipe it.
+    let kept = "";
+    try {
+      kept = fs.readFileSync(file, "utf8");
+    } catch (e) {
+      if (e.code !== "ENOENT") throw e;
+    }
+    // Drop only our own lines; other content, blank lines included, stays as is.
+    kept = kept.replace(/^export MCPORTER_OAUTH_NO_BROWSER=.*(\n|$)/gm, "");
+    if (kept && !kept.endsWith("\n")) kept += "\n";
+    fs.writeFileSync(file, kept + "export MCPORTER_OAUTH_NO_BROWSER=1\n");
+  }
 } catch {}
 
 try {
