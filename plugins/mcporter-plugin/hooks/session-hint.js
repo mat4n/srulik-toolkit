@@ -93,10 +93,16 @@ function scripts() {
 try {
   const file = process.env.CLAUDE_ENV_FILE;
   if (file) {
+    // Only a missing file counts as empty; any other read error must not wipe it.
     let kept = "";
     try {
-      kept = fs.readFileSync(file, "utf8").split("\n").filter((l) => l && !/^export MCPORTER_OAUTH_NO_BROWSER=/.test(l)).map((l) => l + "\n").join("");
-    } catch {}
+      kept = fs.readFileSync(file, "utf8");
+    } catch (e) {
+      if (e.code !== "ENOENT") throw e;
+    }
+    // Drop only our own lines; other content, blank lines included, stays as is.
+    kept = kept.replace(/^export MCPORTER_OAUTH_NO_BROWSER=.*(\n|$)/gm, "");
+    if (kept && !kept.endsWith("\n")) kept += "\n";
     fs.writeFileSync(file, kept + "export MCPORTER_OAUTH_NO_BROWSER=1\n");
   }
 } catch {}
