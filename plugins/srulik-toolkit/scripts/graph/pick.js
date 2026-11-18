@@ -56,7 +56,9 @@ function signalFor(kind, data) {
     debugging: [aa('terminal_bench_4_0'), arena('agent', 'score')],
     agentic: [arena('agent', 'score'), aa('automation_bench')], code: [aa('terminal_bench_4_0'), arena('agent', 'score')],
     reasoning: [aa('humanitys_last_exam')], 'long-context': [aa('long_context_reasoning')], writing: [aa('gdpval_elo')],
-  }[kind] ?? [aa('intelligence_index')];
+  }[kind] ?? [];
+  // a model listed in either source must still get a score: end every chain with general signals from both
+  chain.push(...[aa('intelligence_index'), arena('agent', 'score'), arena('webdev', 'rating')].filter(s => !chain.some(c => c.name === s.name)));
   return chain.map(s => ({ ...s, values: s.values.filter(([, v]) => Number.isFinite(v)) })).filter(s => s.values.length);
 }
 

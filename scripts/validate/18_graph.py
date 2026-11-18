@@ -24,7 +24,7 @@ graph_core = graph_skill.split("## Graph mode", 1)[1].split("\n## ", 1)[0]
 for graph_host_name in ["delegate_task", "orchestrator_capabilities", "schedule_task", "preview_open", "sudo"]:
     if graph_host_name in graph_core:
         raise SystemExit(f"agent-swarm graph mode core must not name host tool: {graph_host_name}")
-for graph_phrase in ["| ui-ux | arena.webdev", "30-day half-life", "whole population", "`partial`",
+for graph_phrase in ["| ui-ux | arena.webdev", "a model listed in either source gets a score", "30-day half-life", "whole population", "`partial`",
                      "`input.p = [{index, item, file, summary}]`", "Every agent task carries `graph`", "## Node files and the run index",
                      "`attachments: [{name, text}]`", "Node names match `[a-z0-9_-]+`", "top-down by default", "follows the system", "only when the real path stays inside `<run-dir>/nodes`",
                      "## Loops", "## Parent tasks", "| `after` |", "| `when` |", "`skipped`", "`resumed: true`", "continued, never restarted", "${prev.<node>.<field>}",
