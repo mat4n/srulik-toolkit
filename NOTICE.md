@@ -49,6 +49,9 @@ license is retained in
 
 Copyright (c) 2026 HumanLayer
 
+The Mermaid routing rule, diagram-type examples, and HTML Mermaid rendering
+guidance in `show-me` were added for this toolkit.
+
 The `retro` skill adapts Matt Pocock's public `retro` skill
 (https://github.com/mattpocock/skills) at revision
 `4588b32ecab9ecc9fc8cc6b6c5e7d675b6004b0d` under the MIT License. Its original

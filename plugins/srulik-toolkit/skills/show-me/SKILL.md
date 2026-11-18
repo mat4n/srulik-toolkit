@@ -15,7 +15,7 @@ on(save)
   return fresh result
 ```
 
-- Show runtime control flow as a call tree:
+- Show which functions call which as a call tree:
 
 ```text
 submitForm
@@ -43,7 +43,32 @@ src/
 └── transport/      # sends API requests
 ```
 
-- Show component interaction, control flow, or data flow with Mermaid:
+- Use Mermaid by default for relationships: branching control flow, data flow, component boundaries, state, interaction over time, chronology, branch history, and data models. Keep text trees, pseudocode, and diffs for code shape and changes. Keep each diagram to about 12 nodes, use real names from the topic, and quote labels that contain punctuation.
+
+Show control flow, data flow, or component boundaries as a `flowchart`:
+
+```mermaid
+flowchart LR
+    User --> UI
+    subgraph Daemon
+        Expand["expand /show-me"] --> Agent
+    end
+    UI --> Expand
+    Agent -- "stream result" --> UI
+```
+
+Show a lifecycle as a `stateDiagram-v2`:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Draft
+    Draft --> Running: submit
+    Running --> Done: result
+    Running --> Failed: error
+    Failed --> Running: retry
+```
+
+Show interaction over time as a `sequenceDiagram`:
 
 ```mermaid
 sequenceDiagram
@@ -53,6 +78,35 @@ sequenceDiagram
     User->>UI: choose command
     UI->>Daemon: send expanded prompt
     Daemon-->>UI: stream result
+```
+
+Show chronology as a `timeline`:
+
+```mermaid
+timeline
+    2026-09 : import show-me
+    2026-10 : tour invokes show-me
+    2026-11 : Mermaid by default
+```
+
+Show branch history as a `gitGraph`:
+
+```mermaid
+gitGraph
+    commit id: "main"
+    branch feat/show-me
+    commit id: "add examples"
+    checkout main
+    merge feat/show-me
+```
+
+Show a data model as an `erDiagram`:
+
+```mermaid
+erDiagram
+    SESSION ||--o{ MESSAGE : contains
+    SESSION ||--o{ RUN : starts
+    RUN }o--|| SKILL : uses
 ```
 
 - Use `diff` when the point is what changes and the surrounding shape already exists. Match the diff shape to the topic.
@@ -114,11 +168,7 @@ function expandSkill(command: string): string {
 }
 ```
 
-- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one focused HTML file — a diagram, an infographic, or a short slide deck, whichever fits the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Then open it for the user:
-
-```
-Bash(open path/to/show-me-{description}.html)
-```
+- For a visual UI, layout, state comparison, or concept too dense for Mermaid, write one focused HTML file — a diagram, an infographic, or a short slide deck, whichever fits the point. Match the product's colors, type, spacing, and components; use real labels and data; support desktop and mobile. Render any diagram in it with Mermaid when remote resources are allowed: put the source in `<pre class="mermaid">`, escape `<` as `&lt;` and `&` as `&amp;`, and load the pinned build with `<script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@12.3.0/dist/mermaid.esm.min.mjs"; mermaid.initialize({ startOnLoad: true });</script>`. When the caller or environment forbids remote resources, draw the diagram as inline SVG instead. Then open the file for the user with the host's viewer or the OS opener; if neither is available, give its path.
 
 ### guidance
 
