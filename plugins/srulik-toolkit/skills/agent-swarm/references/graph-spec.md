@@ -153,6 +153,8 @@ The claim lock records the process that holds it. While that process is still ru
    | long-context | AA long_context_reasoning |
    | writing | AA gdpval_elo |
 
+   Every kind then falls back to AA intelligence_index, arena.agent score, arena.webdev rating and AA humanitys_last_exam, skipping any already listed, so a model with a general score in either source gets a score. Most AA rows lack intelligence_index, so humanitys_last_exam is the last resort. A row with none of these four, such as one with only a kind-specific benchmark another kind uses, stays unscored for kinds that don't use it. Any other kind uses only these four.
+
    A score is matched to the candidate's effort: an entry measured at that effort (such as `claude-opus-5-5-low`, or `Claude Opus 5.5 (Low)` on LMArena, for effort `low`) wins, then the unsuffixed entry. An entry measured at a different effort is never used. LMArena's other parenthesized notes, such as dates or `Codex Harness`, are ignored.
 
 3. **Tier floor.** A candidate's percentile is computed against the whole population that has a score for that signal, not just the runnable candidates. The floors:
