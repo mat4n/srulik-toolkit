@@ -28,6 +28,8 @@ module.exports = {
     assert.equal(pick({ kind: 'ui-ux' }, cands, { ...d, arena: {} }).reason.signal, 'aa.intelligence_index', 'an AA-only model still gets a ui-ux score');
     const noIndex = { ...d, arena: {}, aa: d.aa.map(m => ({ ...m, intelligence_index: null })) };
     assert.equal(pick({ kind: 'ui-ux' }, cands, noIndex).reason.signal, 'aa.humanitys_last_exam', 'an AA row without intelligence_index still gets a ui-ux score');
+    const tbOnly = { ...noIndex, aa: noIndex.aa.map(m => ({ ...m, benchmarks: { terminal_bench_4_0: m.benchmarks.terminal_bench_4_0 } })) };
+    assert.equal(pick({ kind: 'ui-ux', pick: { tier: 'cheap' } }, [cands[0]], tbOnly).reason.signal, 'notes-or-evidence', 'a row with no general score stays unscored for ui-ux');
     const arenaOnly = { ...d, aa: [], arena: { agent: [{ model_name: 'Claude Opus 5.5 (High)', score: 90 }, { model_name: 'Other', score: 10 }] } };
     assert.equal(pick({ kind: 'reasoning' }, [cands[0]], arenaOnly).reason.signal, 'arena.agent', 'an LMArena-only model still gets a reasoning score');
     assert.equal(pick({ kind: 'code' }, cands, d, { exclude_creators: ['Anthropic'] }).creator, 'OpenAI');
