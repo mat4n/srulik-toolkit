@@ -65,6 +65,7 @@ for phrase in [
     "cross-check stated behavior against it. If they disagree, cite `file:line`",
     "Keep the total at four questions or fewer and preserve the outcome and Definition of Done gate",
     "The grill writes no files.",
+    "add one task to create a root `GLOSSARY.md`",
     "in the plan only",
     "hard to reverse, surprising without context, and the result of a real trade-off",
     "If the offer is accepted, add a plan task to write the ADR",
