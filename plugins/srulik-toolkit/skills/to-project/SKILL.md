@@ -25,7 +25,7 @@ interview, it cannot be delegated.
 project: `AGENTS.md` or `.git`), this is an **extend** run, follow EXTEND.md
 instead of the steps below. Otherwise it is a **new** run, continue here. Both
 modes accept one or more sources. For vocabulary selection and legacy
-`CONTEXT.md` compatibility, follow [GLOSSARY-FORMAT.md](GLOSSARY-FORMAT.md).
+`CONTEXT.md` compatibility, follow the [glossary format](../create-plan/references/GLOSSARY-FORMAT.md).
 
 ### 1. Ingest
 Accept whatever the user has: a one-line idea, a pasted artifact, a path to
@@ -60,10 +60,10 @@ answer. If a question is answerable from the input, answer it from the input
 instead of asking.
 
 Write decisions live, do not batch:
-- **Terminology** -> `GLOSSARY.md` glossary (format: GLOSSARY-FORMAT.md). Devoid of
+- **Terminology** -> `GLOSSARY.md` glossary (format: [glossary format](../create-plan/references/GLOSSARY-FORMAT.md)). Devoid of
   implementation detail. A glossary, nothing else.
 - **Hard-to-reverse trade-offs** -> `docs/adr/NNNN-slug.md`, sparingly. File only
-  when it clears the ADR gate (format and gate: ADR-FORMAT.md).
+  when it clears the ADR gate (format and gate: [ADR format](../create-plan/references/ADR-FORMAT.md)).
 
 Grilling moves:
 - Challenge terms that conflict with what is already in `GLOSSARY.md`.
@@ -159,7 +159,7 @@ syntax. If either file already exists, preserve its content and merge the
 steering instructions instead of overwriting it.
 
 ## Files
-templates.md (scaffold file bodies), EXTEND.md (extend mode), GLOSSARY-FORMAT.md and
-ADR-FORMAT.md (formats for step 4), base-skills/ (capture-to-project and tidy-project,
+templates.md (scaffold file bodies), EXTEND.md (extend mode), the shared [glossary format](../create-plan/references/GLOSSARY-FORMAT.md) and
+[ADR format](../create-plan/references/ADR-FORMAT.md) (formats for step 4), base-skills/ (capture-to-project and tidy-project,
 copied into each scaffold). Additional skill discovery is optional
 and runs only when the user requests it.

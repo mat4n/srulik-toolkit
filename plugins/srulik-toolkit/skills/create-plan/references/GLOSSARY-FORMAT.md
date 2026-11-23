@@ -50,6 +50,7 @@ _Avoid_: Client, buyer, account
 
 Follow the repository's instructions and existing domain map first. New projects
 use a root `GLOSSARY.md`, created lazily when the first domain term is resolved.
+Exception: a create-plan plan that changes a repository with no vocabulary file (no `GLOSSARY.md`, no `CONTEXT.md`, and no domain map named by its instructions) adds one task that creates a root `GLOSSARY.md` with the resolved terms, or with only the title, a one-sentence context line and an empty `## Language` when none were resolved.
 For multiple domains, use the relevant domain's glossary and index it in the
 existing steering or map file; create no extra map merely for the filename change.
 

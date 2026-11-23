@@ -24,6 +24,8 @@ Unless the user explicitly forbids interaction, run at least one substantive adv
 
 If normal research leaves no obvious ambiguity, build a small adversarial wave around the highest-impact remaining assumptions, tradeoffs, failure modes, or definitions of success. The point is to test whether apparent completeness survives scrutiny.
 
+Apply [domain-modeling.md](domain-modeling.md) to every grill: check terms against the selected vocabulary file and turn resolved terms and accepted ADRs into plan tasks.
+
 ## Outcome and Definition of Done gate
 
 Every plan requires two explicit and separate foundation decisions:

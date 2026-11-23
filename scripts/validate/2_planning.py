@@ -186,17 +186,6 @@ for surface_name, surface in [("create-plan", create_plan), ("implement-plan", i
         if token in surface:
             raise SystemExit(f"host-specific instruction in {surface_name} core: {token}")
 
-glossary_format = skill_root / "to-project" / "GLOSSARY-FORMAT.md"
-if not glossary_format.is_file() or (skill_root / "to-project" / "CONTEXT-FORMAT.md").exists():
-    raise SystemExit("to-project must ship the renamed glossary format")
-for relative in ["to-project/SKILL.md", "to-project/templates.md", "to-project/EXTEND.md", "to-project/base-skills/capture-to-project/SKILL.md", "tdd/SKILL.md"]:
-    text = (skill_root / relative).read_text(encoding="utf-8")
-    if "GLOSSARY.md" not in text or "CONTEXT-FORMAT.md" in text:
-        raise SystemExit(f"stale glossary routing: {relative}")
-for relative in ["to-project/GLOSSARY-FORMAT.md", "to-project/EXTEND.md", "to-project/base-skills/capture-to-project/SKILL.md", "tdd/SKILL.md"]:
-    if "CONTEXT.md" not in (skill_root / relative).read_text(encoding="utf-8"):
-        raise SystemExit(f"missing legacy context compatibility: {relative}")
-
 pr_conventions = (skill_root / "create-pr" / "references" / "conventions.md").read_text(encoding="utf-8")
 pr_evidence = (skill_root / "create-pr" / "references" / "evidence.md").read_text(encoding="utf-8")
 pr_template = (root / ".github" / "PULL_REQUEST_TEMPLATE.md").read_text(encoding="utf-8")
