@@ -90,6 +90,8 @@ for token in [
     "each `MERGED` is intermediate progress",
     "The terminal state is the plan's own Definition of Done",
     "After each merge, start the next PR or step in the same turn",
+    "While in-scope work remains, end a turn only with an active watch",
+    "reference the issue there without closing it",
     "A reply that lists open in-scope work is not a handoff",
     "After the terminal state of the whole plan and monitoring cleanup",
     "These states do not satisfy the Definition of Done",

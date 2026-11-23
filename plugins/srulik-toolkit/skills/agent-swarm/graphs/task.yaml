@@ -186,8 +186,18 @@ nodes:
       MERGED and the issue's closure.
       Return JSON {"merged":true|false}.
     out: [merged]
-  recap:
+  continue:
     needs: [merge, babysit, fix]
+    parent: |
+      Follow execute-task-end-to-end's "Several PRs or post-merge steps" case. When the plan has another PR, such as
+      the next wave, run it now as a nested graphs/task.yaml run with that part as its request, in the same turn.
+      Then run each post-merge step the plan names, such as a deploy, release or tag, and verify it on its target.
+      While one waits, end the turn with a watch or background task active; this task comes back from next as resumed.
+      Report done true only when the plan's own Definition of Done holds, or the plan had only this PR.
+      Return JSON {"done":true|false,"remaining":["<plan step not done, with its blocker>"]}.
+    out: [done, remaining]
+  recap:
+    needs: [continue]
     parent: |
       Follow execute-task-end-to-end step 7: remove the watch, then recap the whole task with $srulik-toolkit:recap
       and put the handoff evidence under it.
