@@ -24,8 +24,8 @@ for relative in ["create-plan/references/GLOSSARY-FORMAT.md", "create-plan/refer
 
 mandatory = "Apply [domain-modeling.md](domain-modeling.md) to every grill: check terms against the selected vocabulary file and turn resolved terms and accepted ADRs into plan tasks."
 grilling_doc = (references / "grilling.md").read_text(encoding="utf-8")
-invariant = grilling_doc.split("## Minimum grill invariant", 1)[-1].split("\n## ", 1)[0]
-if grilling_doc.count(mandatory) != 1 or invariant.splitlines().count(mandatory) != 1:
+invariant = grilling_doc.split("\n## Minimum grill invariant\n", 1)[-1].split("\n## ", 1)[0]
+if grilling_doc.count("\n## Minimum grill invariant\n") != 1 or grilling_doc.count(mandatory) != 1 or invariant.splitlines().count(mandatory) != 1:
     raise SystemExit("create-plan/references/grilling.md: domain-modeling line must occur once in Minimum grill invariant")
 
 for relative in ["to-project/SKILL.md", "to-project/EXTEND.md"]:
