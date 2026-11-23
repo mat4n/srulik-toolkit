@@ -29,8 +29,8 @@ function writeJson(file, data) {
   fs.writeFileSync(temporary, `${JSON.stringify(data, null, 2)}\n`);
   fs.renameSync(temporary, file);
 }
-function git(cwd, args) {
-  try { return cp.execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8", timeout: 5000, stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { return null; }
+function git(cwd, args, timeout = 5000) {
+  try { return cp.execFileSync("git", ["-C", cwd, ...args], { encoding: "utf8", timeout, stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { return null; }
 }
 function project(cwd) {
   const top = git(cwd, ["rev-parse", "--show-toplevel"]);
@@ -150,6 +150,7 @@ function stageInputs(dir, target) {
   const inbox = path.join(target, INBOX);
   fs.mkdirSync(inbox, { recursive: true });
   const files = { deltas: path.join(inbox, "deltas.json"), instructions: path.join(inbox, "automatic.md") };
+  fs.rmSync(files.deltas, { force: true });
   fs.copyFileSync(AUTOMATIC, files.instructions);
   const sources = { signals: path.join(dir, "signals.jsonl"), ...stores(dir) };
   for (const [name, source] of Object.entries(sources)) {
@@ -161,13 +162,20 @@ function stageInputs(dir, target) {
 
 const cli = {
   claude: (prompt) => ["claude", ["-p", prompt, "--permission-mode", "acceptEdits"]],
-  cursor: (prompt) => ["cursor-agent", ["-p", prompt, "--output-format", "text"]],
-  codex: (prompt) => ["codex", ["exec", "--sandbox", "workspace-write", prompt]],
+  cursor: (prompt) => ["cursor-agent", ["-p", prompt, "--output-format", "text", "--force", "--trust"]],
+  codex: (prompt) => ["codex", ["exec", "--sandbox", "workspace-write", "--skip-git-repo-check", prompt]],
 };
 
 function launch(harness, info, state) {
-  const prompt = reviewPrompt(info.key, { instructions: AUTOMATIC, signals: path.join(info.dir, "signals.jsonl"), ...stores(info.dir), deltas: path.join(info.dir, "deltas.json") }, true);
   const t3 = Boolean(process.env.T3CODE_THREAD_ID) && onPath("t3") && info.top;
+  const snapshot = path.join(info.dir, "signals.review.jsonl");
+  if (t3) {
+    fs.copyFileSync(path.join(info.dir, "signals.jsonl"), snapshot);
+    state.review_offset = fs.statSync(snapshot).size;
+  }
+  const deltas = path.join(info.dir, "deltas.json");
+  fs.rmSync(deltas, { force: true });
+  const prompt = reviewPrompt(info.key, { instructions: AUTOMATIC, signals: snapshot, ...stores(info.dir), deltas }, true);
   const route = t3
     ? { name: "t3", command: "t3", args: ["thread", "start", info.top, "-", "--title", "Srulik learn review", "--worktree", "HEAD"], stdin: prompt }
     : { name: "cli", command: process.execPath, args: [__filename, "review", harness, info.key, info.top || ""] };
@@ -233,11 +241,14 @@ function invalid(delta, fixes) {
 
 function commitFix(worktree, delta, info, state) {
   if (!worktree || !git(worktree, ["rev-parse", "--show-toplevel"])) return "no worktree";
+  // Only a linked worktree, never the user's main checkout and its uncommitted work.
+  const gitDir = git(worktree, ["rev-parse", "--path-format=absolute", "--git-dir"]);
+  if (!gitDir || gitDir === git(worktree, ["rev-parse", "--path-format=absolute", "--git-common-dir"])) return "not a linked worktree";
   if (!git(worktree, ["status", "--porcelain"])) return "no changes";
   const branch = `srulik-learn/${delta.slug}`;
   if (git(worktree, ["checkout", "-b", branch]) === null) return "branch exists";
-  git(worktree, ["add", "-A"]);
-  if (git(worktree, ["commit", "-m", `chore(learn): ${delta.summary}`]) === null) return "commit failed";
+  git(worktree, ["add", "-A"], 60_000);
+  if (git(worktree, ["commit", "-m", `chore(learn): ${delta.summary}`], 120_000) === null) return "commit failed";
   const record = { branch, summary: delta.summary, at: iso(now()) };
   if (process.env.SRULIK_TOOLKIT_LEARN_PRS === "1" && info.top && git(info.top, ["remote"])) {
     const steps = [["git", ["-C", worktree, "push", "-u", "origin", branch]], ["gh", ["pr", "create", "--draft", "--head", branch, "--title", `Learned: ${delta.summary}`, "--body", "Proposed by the Srulik Toolkit self-learning review from repeated session signals."]]];
@@ -262,11 +273,13 @@ function merge(key, deltasFile, worktree) {
   const files = stores(dir);
   const data = Object.fromEntries(Object.entries(files).map(([scope, file]) => [scope, readJson(file, { entries: {} })]));
   const input = readJson(deltasFile, null);
+  fs.rmSync(deltasFile, { force: true });
   if (worktree) fs.rmSync(path.join(worktree, INBOX), { recursive: true, force: true });
   const applied = [];
   const rejected = [];
   const at = iso(now());
   let fixes = 0;
+  const touched = new Set();
   for (const delta of Array.isArray(input?.deltas) ? input.deltas : [{ op: "invalid file" }]) {
     const reason = invalid(delta, fixes);
     if (reason) { rejected.push({ delta, reason }); continue; }
@@ -276,6 +289,9 @@ function merge(key, deltasFile, worktree) {
       (why ? rejected : applied).push(why ? { delta, reason: why } : delta);
       continue;
     }
+    // One review may move an entry once, so a single signal cannot reach two sightings.
+    if (touched.has(`${delta.scope}/${delta.id}`)) { rejected.push({ delta, reason: "duplicate id in one review" }); continue; }
+    touched.add(`${delta.scope}/${delta.id}`);
     const entries = (data[delta.scope].entries ||= {});
     const entry = entries[delta.id];
     if (!entry && delta.op !== "add") { rejected.push({ delta, reason: "unknown id" }); continue; }
@@ -320,7 +336,10 @@ function review(harness, key, top) {
   try {
     if (top) {
       worktree = fs.mkdtempSync(path.join(os.tmpdir(), "srulik-learn-"));
-      if (git(top, ["worktree", "add", "--detach", worktree, "HEAD"]) === null) worktree = null;
+      if (git(top, ["worktree", "add", "--detach", worktree, "HEAD"], 120_000) === null) {
+        fs.rmSync(worktree, { recursive: true, force: true });
+        worktree = null;
+      }
     }
     const statePath = path.join(dir, "state.json");
     const state = readJson(statePath, {});
@@ -335,7 +354,7 @@ function review(harness, key, top) {
     if (fs.existsSync(files.deltas)) merge(key, files.deltas, worktree);
   } finally {
     fs.rmSync(path.join(dir, "review.lock"), { recursive: true, force: true });
-    if (worktree) git(top, ["worktree", "remove", "--force", worktree]);
+    if (worktree) git(top, ["worktree", "remove", "--force", worktree], 120_000);
   }
 }
 

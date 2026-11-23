@@ -136,6 +136,11 @@ with tempfile.TemporaryDirectory() as temporary:
     if [r["reason"] for r in rejected] != ["unknown op", "text must be 1 to 200 characters", "unknown id"]:
         raise SystemExit(f"rejections must be recorded with reasons: {rejected}")
 
+    once = learn_deltas(home, [{"op": "add", "scope": "user", "id": "planted", "text": "Do X."}, {"op": "seen", "scope": "user", "id": "planted"}])
+    if once["rejected"] != ["duplicate id in one review"] or "Do X." in learn_run(home, ["start", "claude"], {"cwd": cwd}):
+        raise SystemExit("one review must not move an entry twice")
+    if (home / "deltas-input.json").exists():
+        raise SystemExit("merge must delete the deltas file so it is never merged twice")
     learn_deltas(home, [{"op": "add", "scope": "project", "id": "use-pnpm", "text": "Use pnpm, not npm."},
                         {"op": "add", "scope": "override", "skill": "create-pr", "id": "draft-prs", "text": "Open pull requests as drafts."}])
     if "Use pnpm" in learn_run(home, ["start", "claude"], {"cwd": cwd}):
@@ -153,7 +158,8 @@ with tempfile.TemporaryDirectory() as temporary:
         raise SystemExit(f"stats must report recurrence after apply: {report}")
 
     learn_deltas(home, [{"op": "add", "scope": "user", "id": f"rank-{i:02d}", "text": f"Rule {i}."} for i in range(15)])
-    learn_deltas(home, [{"op": "seen", "scope": "user", "id": f"rank-{i:02d}"} for i in range(15)] + [{"op": "seen", "scope": "user", "id": "rank-14"}])
+    learn_deltas(home, [{"op": "seen", "scope": "user", "id": f"rank-{i:02d}"} for i in range(15)])
+    learn_deltas(home, [{"op": "seen", "scope": "user", "id": "rank-14"}])
     lines = [l for l in learn_run(home, ["start", "claude"], {"cwd": cwd}).splitlines() if l.startswith("- ")]
     if len(lines) != 10 or set(lines[:2]) != {"- Use pnpm, not npm.", "- Rule 14."}:
         raise SystemExit(f"start must inject the top 10 by sightings: {lines}")
@@ -164,6 +170,11 @@ with tempfile.TemporaryDirectory() as temporary:
     if "Use pnpm" in learn_run(home, ["start", "claude"], {"cwd": cwd}, SRULIK_TOOLKIT_LEARN_NOW=later):
         raise SystemExit("entries unseen for 60 days must be archived")
 
+    (repo / "AGENTS.md").write_text("# Agents\n\nuser work in progress\n", encoding="utf-8")
+    learn_deltas(home, [{"op": "project_fix", "slug": "main-checkout", "summary": "Must not commit here."}], repo)
+    if learn_git(repo, "branch", "--list", "srulik-learn/main-checkout") or not learn_git(repo, "status", "--porcelain"):
+        raise SystemExit("a project fix must never commit in the user's main checkout")
+    learn_git(repo, "checkout", "-q", "--", "AGENTS.md")
     learn_git(repo, "remote", "add", "origin", str(base / "remote.git"))
     worktree = base / "fix"
     learn_git(repo, "worktree", "add", "-q", "--detach", str(worktree), "HEAD")
@@ -204,4 +215,9 @@ with tempfile.TemporaryDirectory() as temporary:
     launch = json.loads((learn_project(home) / "state.json").read_text(encoding="utf-8"))["last_launch"]
     if launch["route"] != "t3" or launch["argv"][:3] != ["t3", "thread", "start"] or launch["argv"][-2:] != ["--worktree", "HEAD"]:
         raise SystemExit(f"inside T3 Code the review must start a T3 thread in a worktree: {launch}")
+    snapshot = learn_project(home) / "signals.review.jsonl"
+    learn_run(home, ["capture", "claude"], {"cwd": str(repo), "prompt": "no, later signal"})
+    offset = json.loads((learn_project(home) / "state.json").read_text(encoding="utf-8")).get("review_offset")
+    if not snapshot.is_file() or "later signal" in snapshot.read_text(encoding="utf-8") or offset != snapshot.stat().st_size:
+        raise SystemExit("the T3 review must read a snapshot taken at launch")
 print("Self-learning loop passed")
