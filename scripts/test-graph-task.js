@@ -29,8 +29,8 @@ module.exports = {
           case 'fix': return fixes[fixRound++];
           case 'babysit': return { state: 'MERGE READY', merge: opts.merge ?? true };
           case 'merge': return { merged: true };
-          case 'continue': return opts.cont ?? { done: true, remaining: [] };
-          case 'recap': if (opts.seen) opts.seen.recap = t.prompt; return { text: 'r' };
+          case 'continue': return opts.cont ?? { done: true };
+          case 'recap': return { text: 'r' };
           default: throw new Error(`unexpected node ${t.node}`);
         }
       };
@@ -40,10 +40,9 @@ module.exports = {
     const local = temp('graph-');
     drive(spec, local, answers(false, [{ clean: true, plan_file: '/p1', tasks: [{ id: 't1' }] }], [{ clean: true, decided: [] }], () => []), { request: 'fix a typo' });
     for (const node of ['issue', 'pr', 'post', 'babysit', 'merge']) assert.ok(!dispatched(local).includes(node), `${node} is skipped without hosting`);
-    assert.deepEqual(events(local, 'skipped').map(e => e.node).sort(), ['babysit', 'continue', 'issue', 'merge', 'post', 'pr']);
+    assert.deepEqual(events(local, 'skipped').map(e => e.node).sort(), ['babysit', 'issue', 'merge', 'post', 'pr']);
     assert.ok(dispatched(local).includes('recap'));
-    assert.ok(!dispatched(local).includes('continue'), 'continue runs no post-merge steps when no merge ran');
-    assert.ok(events(local, 'skipped').some(e => e.node === 'continue'));
+    assert.ok(dispatched(local).includes('continue'), 'continue still settles the run without a merge');
     assert.equal(status(spec, local).state, 'done');
     // hosted: two plan rounds, ordered implementation, two review rounds, merge after babysit
     const hosted = temp('graph-');
@@ -65,14 +64,25 @@ module.exports = {
     const one = [{ clean: true, plan_file: '/p1', tasks: [{ id: 't1' }] }];
     const unmerged = temp('graph-');
     drive(spec, unmerged, answers(true, one, [{ clean: true, decided: [] }], () => [], { merge: false }), { request: 'r' });
-    assert.ok(!dispatched(unmerged).includes('continue'), 'continue waits for a verified merge');
+    const cont = log(unmerged).find(e => e.type === 'dispatch' && e.node === 'continue');
+    assert.ok(cont, 'continue runs and reports done when no merge ran');
     assert.ok(dispatched(unmerged).includes('recap'));
-    // an unfinished plan reaches recap as a BLOCKED handoff that names what remains
-    const open = temp('graph-'); const recapSeen = {};
-    drive(spec, open, answers(true, one, [{ clean: true, decided: [] }], () => [], { cont: { done: false, remaining: ['prd: Harness approval'] }, seen: recapSeen }), { request: 'r' });
-    assert.match(recapSeen.recap, /done false/);
-    assert.match(recapSeen.recap, /prd: Harness approval/);
-    assert.match(recapSeen.recap, /BLOCKED handoff/);
+    // an unfinished plan never reaches recap: continue stays open, or a final failure blocks the run
+    const { next: nextTask, done: record } = mod('run.js');
+    const open = temp('graph-');
+    const answer = answers(true, one, [{ clean: true, decided: [] }], () => []);
+    for (let guard = 0; guard < 300; guard++) {
+      const tasks = nextTask(spec, open, { request: 'r' }).filter(x => x.node !== 'continue');
+      if (!tasks.length) break;
+      for (const x of tasks) record(spec, open, { node: x.node, index: x.index, round: x.round, attempt: x.attempt, output: answer(x), model: 'fake' });
+    }
+    assert.ok(!dispatched(open).includes('recap'), 'recap waits while continue is open');
+    const resumed = nextTask(spec, open, { request: 'r' });
+    assert.deepEqual(resumed.map(x => [x.node, x.resumed]), [['continue', true]], 'continue comes back from next until recorded');
+    assert.match(resumed[0].prompt, /in the plan's dependency order/);
+    record(spec, open, { node: 'continue', index: 0, round: resumed[0].round, attempt: resumed[0].attempt, failed: true, final: true, reason: 'prd: Harness approval' });
+    assert.equal(events(open, 'blocked').find(e => e.node === 'recap')?.cause !== undefined, true, 'a blocked plan blocks recap');
+    assert.notEqual(status(spec, open).state, 'done');
     // prompts carry the previous round: the reviewed plan file and the decided findings
     const { next } = mod('run.js');
     const probe = temp('graph-');

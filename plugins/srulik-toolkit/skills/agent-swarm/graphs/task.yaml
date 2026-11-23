@@ -188,21 +188,23 @@ nodes:
     out: [merged]
   continue:
     needs: [merge, babysit, fix]
-    when: merge.merged == true
+    in: ${merge.merged}
     parent: |
-      Follow execute-task-end-to-end's "Several PRs or post-merge steps" case. When the plan has another PR, such as
-      the next wave, run it now as a nested graphs/task.yaml run with that part as its request, in the same turn.
-      Then run each post-merge step the plan names, such as a deploy, release or tag, and verify it on its target.
-      While one waits, end the turn with a watch or background task active; this task comes back from next as resumed.
-      Report done true only when the plan's own Definition of Done holds, or the plan had only this PR.
-      Return JSON {"done":true|false,"remaining":["<plan step not done, with its blocker>"]}.
-    out: [done, remaining]
+      merge reported merged ${merge.merged}. When it is not true, no merge ran: run no post-merge step, and return
+      done true at once, since this run's handoff is the recap of its own state.
+      Follow execute-task-end-to-end's "Several PRs or post-merge steps" case. Take the plan's remaining PRs and
+      post-merge steps, such as the next wave or a deploy, release or tag, in the plan's dependency order. Do the next
+      one now: run a PR as a nested graphs/task.yaml run with that part as its request, and verify a step on its target.
+      Repeat in the same turn until none is left. While one waits, end the turn with a watch or background task
+      active, and leave this task open: it comes back from next as resumed. Record it only when the plan's own
+      Definition of Done holds, or the plan had only this PR. A remaining item that only the owner can unblock is a
+      failure with final true and the item and its blocker as the reason.
+      Return JSON {"done":true}. Never record done false: the run would read as done while work remains.
+    out: [done]
   recap:
     needs: [continue]
     parent: |
-      Follow execute-task-end-to-end step 7. continue reported done ${continue.done} with remaining ${continue.remaining}
-      (null when no merge ran). When done is false, this is a BLOCKED handoff: keep any watch on a pending item, and
-      name each remaining item with its blocker. Otherwise remove the watch. Then recap the whole task with $srulik-toolkit:recap
+      Follow execute-task-end-to-end step 7: remove the watch, then recap the whole task with $srulik-toolkit:recap
       and put the handoff evidence under it.
       Return JSON {"text":"<recap>"}.
     out: [text]

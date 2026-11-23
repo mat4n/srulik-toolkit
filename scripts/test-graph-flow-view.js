@@ -132,8 +132,9 @@ module.exports = {
     assert.match(yaml, /rerun the audit until ok is true; if a gap cannot close, report failed with final true/);
     assert.match(yaml, /If the checks cannot pass, report this task failed with final true/);
     assert.match(yaml, /nested graphs\/pr-review\.yaml run before MERGE READY/);
-    assert.match(yaml, /run it now as a nested graphs\/task\.yaml run/);
-    assert.match(yaml, /Report done true only when the plan's own Definition of Done holds/);
+    assert.match(yaml, /run a PR as a nested graphs\/task\.yaml run/);
+    assert.match(yaml, /Record it only when the plan's own\r?\n\s+Definition of Done holds/);
+    assert.match(yaml, /in the plan's dependency order/);
     assert.match(yaml, /With no Git repository,\r?\n\s+back up each file first/);
   },
 };
