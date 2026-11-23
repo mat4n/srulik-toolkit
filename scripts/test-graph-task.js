@@ -8,7 +8,7 @@ module.exports = {
   C48() {
     const { check } = mod('spec.js'); const { status } = mod('run.js');
     const spec = check(mod('yaml.js').parse(readFileSync(TASK_YAML, 'utf8')));
-    const answers = (hosted, plan, fixes, reviews) => {
+    const answers = (hosted, plan, fixes, reviews, opts = {}) => {
       let planRound = 0, fixRound = 0, reviewCall = 0;
       return t => {
         switch (t.node) {
@@ -27,10 +27,10 @@ module.exports = {
           case 'verify': return { confirmed: true, evidence: 'e' };
           case 'post': return { posted: true };
           case 'fix': return fixes[fixRound++];
-          case 'babysit': return { state: 'MERGE READY', merge: true };
+          case 'babysit': return { state: 'MERGE READY', merge: opts.merge ?? true };
           case 'merge': return { merged: true };
-          case 'continue': return { done: true, remaining: [] };
-          case 'recap': return { text: 'r' };
+          case 'continue': return opts.cont ?? { done: true, remaining: [] };
+          case 'recap': if (opts.seen) opts.seen.recap = t.prompt; return { text: 'r' };
           default: throw new Error(`unexpected node ${t.node}`);
         }
       };
@@ -40,9 +40,10 @@ module.exports = {
     const local = temp('graph-');
     drive(spec, local, answers(false, [{ clean: true, plan_file: '/p1', tasks: [{ id: 't1' }] }], [{ clean: true, decided: [] }], () => []), { request: 'fix a typo' });
     for (const node of ['issue', 'pr', 'post', 'babysit', 'merge']) assert.ok(!dispatched(local).includes(node), `${node} is skipped without hosting`);
-    assert.deepEqual(events(local, 'skipped').map(e => e.node).sort(), ['babysit', 'issue', 'merge', 'post', 'pr']);
+    assert.deepEqual(events(local, 'skipped').map(e => e.node).sort(), ['babysit', 'continue', 'issue', 'merge', 'post', 'pr']);
     assert.ok(dispatched(local).includes('recap'));
-    assert.ok(dispatched(local).includes('continue'), 'continue runs without hosting too');
+    assert.ok(!dispatched(local).includes('continue'), 'continue runs no post-merge steps when no merge ran');
+    assert.ok(events(local, 'skipped').some(e => e.node === 'continue'));
     assert.equal(status(spec, local).state, 'done');
     // hosted: two plan rounds, ordered implementation, two review rounds, merge after babysit
     const hosted = temp('graph-');
@@ -60,6 +61,18 @@ module.exports = {
     assert.ok(at(e => e.type === 'dispatch' && e.node === 'merge') > at(e => e.type === 'result' && e.node === 'babysit'), 'merge waits for babysit');
     assert.ok(at(e => e.type === 'dispatch' && e.node === 'recap') > at(e => e.type === 'result' && e.node === 'continue'), 'recap waits for the rest of the plan');
     assert.equal(status(spec, hosted).state, 'done');
+    // no merge authority: merge and continue are skipped, and recap still runs
+    const one = [{ clean: true, plan_file: '/p1', tasks: [{ id: 't1' }] }];
+    const unmerged = temp('graph-');
+    drive(spec, unmerged, answers(true, one, [{ clean: true, decided: [] }], () => [], { merge: false }), { request: 'r' });
+    assert.ok(!dispatched(unmerged).includes('continue'), 'continue waits for a verified merge');
+    assert.ok(dispatched(unmerged).includes('recap'));
+    // an unfinished plan reaches recap as a BLOCKED handoff that names what remains
+    const open = temp('graph-'); const recapSeen = {};
+    drive(spec, open, answers(true, one, [{ clean: true, decided: [] }], () => [], { cont: { done: false, remaining: ['prd: Harness approval'] }, seen: recapSeen }), { request: 'r' });
+    assert.match(recapSeen.recap, /done false/);
+    assert.match(recapSeen.recap, /prd: Harness approval/);
+    assert.match(recapSeen.recap, /BLOCKED handoff/);
     // prompts carry the previous round: the reviewed plan file and the decided findings
     const { next } = mod('run.js');
     const probe = temp('graph-');

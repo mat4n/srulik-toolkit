@@ -183,11 +183,12 @@ nodes:
     when: babysit.merge == true
     parent: |
       Follow execute-task-end-to-end step 6: recheck MERGE READY, rerun the audit on the final diff, merge, and verify
-      MERGED and the issue's closure.
+      MERGED. Verify the issue's closure only when this PR completes the plan; otherwise verify it is still open.
       Return JSON {"merged":true|false}.
     out: [merged]
   continue:
     needs: [merge, babysit, fix]
+    when: merge.merged == true
     parent: |
       Follow execute-task-end-to-end's "Several PRs or post-merge steps" case. When the plan has another PR, such as
       the next wave, run it now as a nested graphs/task.yaml run with that part as its request, in the same turn.
@@ -199,7 +200,9 @@ nodes:
   recap:
     needs: [continue]
     parent: |
-      Follow execute-task-end-to-end step 7: remove the watch, then recap the whole task with $srulik-toolkit:recap
+      Follow execute-task-end-to-end step 7. continue reported done ${continue.done} with remaining ${continue.remaining}
+      (null when no merge ran). When done is false, this is a BLOCKED handoff: keep any watch on a pending item, and
+      name each remaining item with its blocker. Otherwise remove the watch. Then recap the whole task with $srulik-toolkit:recap
       and put the handoff evidence under it.
       Return JSON {"text":"<recap>"}.
     out: [text]
