@@ -1,7 +1,7 @@
 # Self-learning loop: capture, start, merge and stats in scripts/learn.js, run as
 # fake sessions per harness against a temporary state home and git repository.
 learn = plugin / "scripts" / "learn.js"
-learn_text = learn.read_text(encoding="utf-8")
+learn_text = "".join(f.read_text(encoding="utf-8") for f in [learn, *sorted((plugin / "scripts" / "learn").glob("*.js"))])
 automatic = (plugin / "skills" / "retro" / "references" / "automatic.md").read_text(encoding="utf-8")
 retro = (plugin / "skills" / "retro" / "SKILL.md").read_text(encoding="utf-8")
 for token in ['"deltas"', "two sightings", "At most one `project_fix`", "Never rewrite", "never commit", "empty `deltas` array"]:
@@ -25,9 +25,9 @@ def learn_env(home, **extra):
     return env
 
 
-def learn_run(home, args, payload=None, **extra):
+def learn_run(home, args, payload=None, run_cwd=None, **extra):
     result = subprocess.run([node, str(learn), *args], input=json.dumps(payload) if payload is not None else "", env=learn_env(home, **extra),
-                            capture_output=True, text=True, timeout=60)
+                            cwd=run_cwd, capture_output=True, text=True, timeout=60)
     if result.returncode or result.stderr:
         raise SystemExit(f"learn.js {args} failed: {result.stderr}")
     return result.stdout
@@ -49,11 +49,20 @@ def learn_signals(home):
     return [json.loads(line) for line in file.read_text(encoding="utf-8").splitlines()] if file.exists() else []
 
 
-def learn_deltas(home, deltas, worktree=None, **extra):
+def learn_deltas(home, deltas, worktree=None, run_cwd=None, raw=None, **extra):
     file = home / "deltas-input.json"
-    file.write_text(json.dumps({"deltas": deltas}), encoding="utf-8")
+    file.write_text(raw if raw is not None else json.dumps({"deltas": deltas}), encoding="utf-8")
     args = ["merge", learn_project(home).name, str(file)] + ([str(worktree)] if worktree else [])
-    return json.loads(learn_run(home, args, **extra))
+    return json.loads(learn_run(home, args, run_cwd=run_cwd or worktree, **extra))
+
+
+def learn_review_head(home, worktree, source=None, launch_at="2000-01-01T00:00:00.000Z"):
+    file = learn_project(home) / "state.json"
+    state = json.loads(file.read_text(encoding="utf-8"))
+    state["review_head"] = learn_git(worktree, "rev-parse", "HEAD")
+    state["review_source"] = str(pathlib.Path(source).resolve()) if source else None
+    state["last_launch"] = {**state.get("last_launch", {}), "at": launch_at}
+    file.write_text(json.dumps(state), encoding="utf-8")
 
 
 def learn_repo(base):
@@ -141,6 +150,10 @@ with tempfile.TemporaryDirectory() as temporary:
         raise SystemExit("one review must not move an entry twice")
     if (home / "deltas-input.json").exists():
         raise SystemExit("merge must delete the deltas file so it is never merged twice")
+    learn_run(home, ["capture", "claude"], {"cwd": cwd, "prompt": "no, keep this signal"})
+    kept = len(learn_signals(home))
+    if learn_deltas(home, None, raw="not json")["rejected"] != ["invalid deltas file"] or len(learn_signals(home)) != kept:
+        raise SystemExit("a malformed deltas file must keep the signals for the next review")
     learn_deltas(home, [{"op": "add", "scope": "project", "id": "use-pnpm", "text": "Use pnpm, not npm."},
                         {"op": "add", "scope": "override", "skill": "create-pr", "id": "draft-prs", "text": "Open pull requests as drafts."}])
     if "Use pnpm" in learn_run(home, ["start", "claude"], {"cwd": cwd}):
@@ -171,6 +184,7 @@ with tempfile.TemporaryDirectory() as temporary:
         raise SystemExit("entries unseen for 60 days must be archived")
 
     (repo / "AGENTS.md").write_text("# Agents\n\nuser work in progress\n", encoding="utf-8")
+    learn_review_head(home, repo)
     learn_deltas(home, [{"op": "project_fix", "slug": "main-checkout", "summary": "Must not commit here."}], repo)
     if learn_git(repo, "branch", "--list", "srulik-learn/main-checkout") or not learn_git(repo, "status", "--porcelain"):
         raise SystemExit("a project fix must never commit in the user's main checkout")
@@ -178,6 +192,38 @@ with tempfile.TemporaryDirectory() as temporary:
     learn_git(repo, "remote", "add", "origin", str(base / "remote.git"))
     worktree = base / "fix"
     learn_git(repo, "worktree", "add", "-q", "--detach", str(worktree), "HEAD")
+    learn_run(home, ["capture", "claude"], {"cwd": str(worktree), "prompt": "no, from a worktree"})
+    if "from a worktree" not in learn_signals(home)[-1]["text"]:
+        raise SystemExit("every worktree of one repository must share one project state")
+    (worktree / "AGENTS.md").write_text("# Agents\n\nother work\n", encoding="utf-8")
+    learn_review_head(home, repo, worktree)
+    own = learn_deltas(home, [{"op": "project_fix", "slug": "own", "summary": "The session's own worktree."}], worktree)
+    if own["rejected"] != ["the user's own worktree"]:
+        raise SystemExit(f"a project fix must never commit in the worktree the session runs in: {own}")
+    learn_review_head(home, repo, launch_at="2999-01-01T00:00:00.000Z")
+    old = learn_deltas(home, [{"op": "project_fix", "slug": "old", "summary": "An older worktree."}], worktree)
+    if old["rejected"] != ["worktree predates the review"]:
+        raise SystemExit(f"a project fix must never commit in a worktree older than the review: {old}")
+    learn_review_head(home, repo)
+    elsewhere = learn_deltas(home, [{"op": "project_fix", "slug": "elsewhere", "summary": "Run from elsewhere."}], worktree, run_cwd=str(repo))
+    if elsewhere["rejected"] != ["not run from the review worktree"]:
+        raise SystemExit(f"a project fix must be merged from inside the review worktree: {elsewhere}")
+    learn_git(worktree, "commit", "-qam", "moved")
+    moved = learn_deltas(home, [{"op": "project_fix", "slug": "moved", "summary": "Moved head."}], worktree)
+    if moved["rejected"] != ["worktree is not at the review commit"]:
+        raise SystemExit(f"a project fix must come from a worktree still at the review commit: {moved}")
+    learn_git(worktree, "checkout", "-q", "--detach", "main")
+    hook = pathlib.Path(learn_git(repo, "rev-parse", "--path-format=absolute", "--git-common-dir")) / "hooks" / "pre-commit"
+    hook.parent.mkdir(exist_ok=True)
+    hook.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    hook.chmod(0o755)
+    (worktree / "AGENTS.md").write_text("# Agents\n\nhook blocks this\n", encoding="utf-8")
+    blocked = learn_deltas(home, [{"op": "project_fix", "slug": "blocked", "summary": "Blocked by a hook."}], worktree)
+    if blocked["rejected"] != ["commit failed"] or learn_git(repo, "branch", "--list", "srulik-learn/blocked"):
+        raise SystemExit("a failed commit must not leave its branch behind")
+    hook.unlink()
+    learn_git(worktree, "checkout", "-q", "--detach", "main")
+    learn_git(worktree, "reset", "-q", "--hard")
     (worktree / "AGENTS.md").write_text("# Agents\n\nRun `npm test` before finishing.\n", encoding="utf-8")
     (worktree / ".srulik-learn").mkdir()
     (worktree / ".srulik-learn" / "signals.jsonl").write_text("", encoding="utf-8")
