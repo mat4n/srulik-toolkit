@@ -135,6 +135,7 @@ module.exports = {
     assert.match(yaml, /run a PR as a nested graphs\/task\.yaml run/);
     assert.match(yaml, /Record it only when the plan's own\r?\n\s+Definition of Done holds/);
     assert.match(yaml, /in the plan's dependency order/);
+    assert.match(yaml, /tasks lists only the first PR's tasks/);
     assert.match(yaml, /With no Git repository,\r?\n\s+back up each file first/);
   },
 };

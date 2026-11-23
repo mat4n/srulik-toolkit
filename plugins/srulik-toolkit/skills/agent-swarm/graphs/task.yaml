@@ -63,6 +63,8 @@ nodes:
       Review the plan file as $srulik-toolkit:create-plan step 10 and references/quality-gates.md describe.
       clean is true only when the review finds zero actionable comments.
       hosted is false only when no hosted Git repository applies, as execute-task-end-to-end's No Git hosting section says.
+      When the plan splits the work into several PRs, such as waves, tasks lists only the first PR's tasks; continue
+      runs each later PR as its own nested run, after the steps the plan orders before it.
       Return JSON {"clean":true|false,"findings":[],"plan_file":"<path of the plan as reviewed>","hosted":true|false,
       "tasks":[{"id":"t1","after":[],"brief":"<self-contained task brief>","paths":["<owned paths>"]}]}.
     out: [clean, findings, plan_file, hosted, tasks]
