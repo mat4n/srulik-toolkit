@@ -26,7 +26,8 @@ For each signal, decide whether it teaches something durable:
 
 When a signal matches an existing entry in meaning, emit `seen` for that id. Do
 not add a near-duplicate. A lesson only takes effect after two sightings, so a
-correct `seen` matters more than new wording.
+correct `seen` matters more than new wording. Emit at most one delta per id per
+run, so several signals about one lesson in this batch count as one sighting.
 
 At most one `project_fix` per run, and only when the same project lesson was
 seen before and a small repository change would prevent it, such as a missing
