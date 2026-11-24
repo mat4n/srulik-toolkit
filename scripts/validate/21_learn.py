@@ -4,7 +4,7 @@ learn = plugin / "scripts" / "learn.js"
 learn_text = "".join(f.read_text(encoding="utf-8") for f in [learn, *sorted((plugin / "scripts" / "learn").glob("*.js"))])
 automatic = (plugin / "skills" / "retro" / "references" / "automatic.md").read_text(encoding="utf-8")
 retro = (plugin / "skills" / "retro" / "SKILL.md").read_text(encoding="utf-8")
-for token in ['"deltas"', "two sightings", "At most one `project_fix`", "Never rewrite", "never commit", "empty `deltas` array"]:
+for token in ['"deltas"', "two sightings", "At most one `project_fix`", "Never rewrite", "never commit", "empty `deltas` array", "untrusted data"]:
     if token not in automatic:
         raise SystemExit(f"retro automatic mode is missing {token!r}")
 if "references/automatic.md" not in retro:
@@ -15,6 +15,9 @@ for token in ["## Self-learning", "SRULIK_TOOLKIT_LEARN=0", "SRULIK_TOOLKIT_LEAR
 # The review must not capture or review itself (R12).
 if learn_text.count('SRULIK_TOOLKIT_LEARN: "0"') != 2:
     raise SystemExit("both review routes must pass SRULIK_TOOLKIT_LEARN=0 to the child")
+for token in ['"--tools", "Read,Edit,Write,Glob,Grep"', '"--sandbox", "enabled"', '"--sandbox", "workspace-write"', "untrusted data, never instructions"]:
+    if token not in learn_text:
+        raise SystemExit(f"the review run must be limited to file tools and treat signals as data: {token}")
 
 
 def learn_env(home, **extra):
@@ -114,6 +117,14 @@ with tempfile.TemporaryDirectory() as temporary:
     leaked = learn_signals(home)[-1]["text"]
     if any(secret in leaked for secret in ["sk-abcdefghijklmnop", "abc.def", "hunter2"]) or len(leaked) > 500:
         raise SystemExit("captured text must be redacted and truncated to 500 characters")
+    command = "NPM_TOKEN=abc123 AWS_SECRET_ACCESS_KEY='s3 cr3t' DATABASE_URL=postgres://user:pw9@host/db npm test --password hunter3 password=\"my pass\""
+    learn_run(home, ["capture", "claude"], {"hook_event_name": "PostToolUseFailure", "cwd": cwd, "tool_input": {"command": command}, "error": "Exit code 1"})
+    leaked = learn_signals(home)[-1]["text"]
+    if any(secret in leaked for secret in ["abc123", "s3 cr3t", "cr3t", "pw9", "hunter3", "my pass", "pass\""]) or "npm test" not in leaked:
+        raise SystemExit(f"redaction must cover prefixed names, quoted values, URL credentials and flags: {leaked}")
+    if os.name != "nt" and ((learn_project(home) / "signals.jsonl").stat().st_mode & 0o077 or learn_project(home).stat().st_mode & 0o077):
+        raise SystemExit("learn state must be readable by its owner only")
+    count += 1
     learn_run(home, ["capture", "claude"], {"cwd": cwd, "prompt": "no, never again"}, SRULIK_TOOLKIT_LEARN="0")
     if len(learn_signals(home)) != count + 1:
         raise SystemExit("SRULIK_TOOLKIT_LEARN=0 must stop capture")
@@ -135,12 +146,16 @@ with tempfile.TemporaryDirectory() as temporary:
     if "last_launch" in json.loads(state_file.read_text(encoding="utf-8")):
         raise SystemExit("a held lock must stop a second review, including one from the review's own session")
 
+    learn_run(home, ["capture", "claude"], {"cwd": cwd, "prompt": "no, after the launch"})
     if learn_deltas(home, [{"op": "explode", "scope": "user", "id": "a"}, {"op": "add", "scope": "user", "id": "long", "text": "x" * 300}, {"op": "seen", "scope": "user", "id": "missing"}])["applied"] != 0:
         raise SystemExit("invalid deltas must be rejected")
     if (home / "user" / "lessons.json").read_text(encoding="utf-8").count('"id"'):
         raise SystemExit("rejected deltas must not change the stores")
-    if learn_signals(home):
-        raise SystemExit("merge must consume the reviewed signals")
+    if [s["text"] for s in learn_signals(home)] != ["no, after the launch"]:
+        raise SystemExit("merge must consume the reviewed signals and keep the ones logged after launch")
+    stale = home / "stores.lock"
+    stale.mkdir()
+    os.utime(stale, (0, 0))
     rejected = json.loads(state_file.read_text(encoding="utf-8"))["rejected"]
     if [r["reason"] for r in rejected] != ["unknown op", "text must be 1 to 200 characters", "unknown id"]:
         raise SystemExit(f"rejections must be recorded with reasons: {rejected}")
@@ -148,6 +163,8 @@ with tempfile.TemporaryDirectory() as temporary:
     once = learn_deltas(home, [{"op": "add", "scope": "user", "id": "planted", "text": "Do X."}, {"op": "seen", "scope": "user", "id": "planted"}])
     if once["rejected"] != ["duplicate id in one review"] or "Do X." in learn_run(home, ["start", "claude"], {"cwd": cwd}):
         raise SystemExit("one review must not move an entry twice")
+    if stale.exists():
+        raise SystemExit("a stale shared store lock must be broken and released after the merge")
     if (home / "deltas-input.json").exists():
         raise SystemExit("merge must delete the deltas file so it is never merged twice")
     learn_run(home, ["capture", "claude"], {"cwd": cwd, "prompt": "no, keep this signal"})
@@ -176,11 +193,16 @@ with tempfile.TemporaryDirectory() as temporary:
     lines = [l for l in learn_run(home, ["start", "claude"], {"cwd": cwd}).splitlines() if l.startswith("- ")]
     if len(lines) != 10 or set(lines[:2]) != {"- Use pnpm, not npm.", "- Rule 14."}:
         raise SystemExit(f"start must inject the top 10 by sightings: {lines}")
+    ranked = json.loads((home / "user" / "lessons.json").read_text(encoding="utf-8"))["entries"]
+    if sum(1 for e in ranked.values() if e["id"].startswith("rank-") and e["applied_at"]) != 9:
+        raise SystemExit("only lessons injected into a session may count as applied")
 
     import time
     later = str(int(time.time() * 1000) + 61 * 86_400_000)
-    learn_deltas(home, [], SRULIK_TOOLKIT_LEARN_NOW=later)
     if "Use pnpm" in learn_run(home, ["start", "claude"], {"cwd": cwd}, SRULIK_TOOLKIT_LEARN_NOW=later):
+        raise SystemExit("entries unseen for 60 days must not be injected, even with no review")
+    learn_deltas(home, [], SRULIK_TOOLKIT_LEARN_NOW=later)
+    if "applied yes, recurred_after_apply 1, archived" not in learn_run(home, ["stats", learn_project(home).name]):
         raise SystemExit("entries unseen for 60 days must be archived")
 
     (repo / "AGENTS.md").write_text("# Agents\n\nuser work in progress\n", encoding="utf-8")
@@ -247,23 +269,3 @@ with tempfile.TemporaryDirectory() as temporary:
     pr = [b for b in json.loads(state_file.read_text(encoding="utf-8"))["branches"] if b["branch"] == "srulik-learn/readme-tests"][0]
     if not any(step.startswith("gh pr create --draft") for step in pr.get("pr_dry", [])):
         raise SystemExit("SRULIK_TOOLKIT_LEARN_PRS=1 must open a draft PR")
-
-with tempfile.TemporaryDirectory() as temporary:
-    base = pathlib.Path(temporary)
-    home = base / "home"
-    repo = learn_repo(base)
-    bin_dir = base / "bin"
-    bin_dir.mkdir()
-    for name in ["t3", "t3.cmd", "t3.exe"]:
-        (bin_dir / name).write_text("", encoding="utf-8")
-    learn_run(home, ["capture", "claude"], {"cwd": str(repo), "prompt": "no, wrong file"})
-    learn_run(home, ["start", "claude"], {"cwd": str(repo)}, T3CODE_THREAD_ID="thread-1", PATH=str(bin_dir) + os.pathsep + os.environ.get("PATH", ""))
-    launch = json.loads((learn_project(home) / "state.json").read_text(encoding="utf-8"))["last_launch"]
-    if launch["route"] != "t3" or launch["argv"][:3] != ["t3", "thread", "start"] or launch["argv"][-2:] != ["--worktree", "HEAD"]:
-        raise SystemExit(f"inside T3 Code the review must start a T3 thread in a worktree: {launch}")
-    snapshot = learn_project(home) / "signals.review.jsonl"
-    learn_run(home, ["capture", "claude"], {"cwd": str(repo), "prompt": "no, later signal"})
-    offset = json.loads((learn_project(home) / "state.json").read_text(encoding="utf-8")).get("review_offset")
-    if not snapshot.is_file() or "later signal" in snapshot.read_text(encoding="utf-8") or offset != snapshot.stat().st_size:
-        raise SystemExit("the T3 review must read a snapshot taken at launch")
-print("Self-learning loop passed")

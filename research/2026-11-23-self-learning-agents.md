@@ -31,7 +31,7 @@ Fully automatic instruction-file growth is the main failure mode. Native memory 
 
 ### Practitioner reports
 
-- An `AGENTS.md` grew from 61 lines back to 755 because agents kept docs in sync with code and nothing ever prompted a deletion. The author keeps a line only if a mistake would be silent or expensive, checks would not catch it, and no nearby comment already says it ([JonahDevs](https://jonahdevs.com/posts/agents-md-grew-back/)).
+- An `AGENTS.md` had reached 755 lines before its author cut it to 61. It then grew back to 341 lines across six files, because agents kept docs in sync with code and nothing ever prompted a deletion. The author keeps a line only if a mistake would be silent or expensive, checks would not catch it, and no nearby comment already says it ([JonahDevs](https://jonahdevs.com/posts/agents-md-grew-back/)).
 - An audit of a 714-line `AGENTS.md` found 40% needed at session start, 49% reference material, and 12% deletable. The author links longer files to worse adherence ([Vic Valenzuela](https://vic.valenzuela.is/blog/claude-md-as-constitution/)).
 
 ## Inferences

@@ -2,7 +2,7 @@
 const cp = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
-const { DAY, INBOX, ACTIVE_AT, PRUNE_DAYS, root, now, iso, readJson, writeJson, git, stores, real } = require("./core");
+const { DAY, INBOX, PRUNE_DAYS, PRIVATE_FILE, root, now, iso, readJson, writeJson, git, stores, withStores, real } = require("./core");
 
 const ops = new Set(["add", "seen", "edit", "archive", "project_fix"]);
 const idPattern = /^[a-z0-9][a-z0-9-]{0,63}$/;
@@ -63,26 +63,46 @@ function merge(key, deltasFile, worktree, fromCli) {
   const dir = path.join(root(), "projects", key);
   const info = { key, dir, top: worktree ? path.resolve(git(worktree, ["rev-parse", "--path-format=absolute", "--git-common-dir"]) || worktree, "..") : null };
   const statePath = path.join(dir, "state.json");
-  const state = readJson(statePath, {});
-  const files = stores(dir);
-  const data = Object.fromEntries(Object.entries(files).map(([scope, file]) => [scope, readJson(file, { entries: {} })]));
   const input = readJson(deltasFile, null);
   fs.rmSync(deltasFile, { force: true });
   if (worktree) fs.rmSync(path.join(worktree, INBOX), { recursive: true, force: true });
   const at = iso(now());
-  if (!Array.isArray(input?.deltas)) {
-    // A missing or malformed file keeps the signals for the next review.
+  const keep = (reason) => {
+    // The signals stay for the next review.
+    const state = readJson(statePath, {});
     delete state.review_offset;
-    state.rejected = [...(state.rejected || []), { at, reason: "invalid deltas file" }].slice(-20);
+    state.rejected = [...(state.rejected || []), { at, reason }].slice(-20);
     writeJson(statePath, state);
     fs.rmSync(path.join(dir, "review.lock"), { recursive: true, force: true });
-    return { applied: 0, rejected: ["invalid deltas file"] };
-  }
+    return { applied: 0, rejected: [reason] };
+  };
+  if (!Array.isArray(input?.deltas)) return keep("invalid deltas file");
+  let result;
+  if (!withStores(30_000, () => { result = apply(input.deltas, dir, info, worktree, fromCli, at); })) return keep("stores busy");
+  return result;
+}
+
+// Moves the reviewed prefix aside by rename, so a concurrent capture append is never truncated.
+function consume(dir, offset) {
+  const live = path.join(dir, "signals.jsonl");
+  const aside = path.join(dir, `signals.consumed.${process.pid}`);
+  try { fs.renameSync(live, aside); } catch { return; }
+  try {
+    const rest = fs.readFileSync(aside).subarray(offset);
+    if (rest.length) fs.appendFileSync(live, rest, PRIVATE_FILE);
+  } finally { fs.rmSync(aside, { force: true }); }
+}
+
+function apply(deltas, dir, info, worktree, fromCli, at) {
+  const statePath = path.join(dir, "state.json");
+  const state = readJson(statePath, {});
+  const files = stores(dir);
+  const data = Object.fromEntries(Object.entries(files).map(([scope, file]) => [scope, readJson(file, { entries: {} })]));
   const applied = [];
   const rejected = [];
   let fixes = 0;
   const touched = new Set();
-  for (const delta of input.deltas) {
+  for (const delta of deltas) {
     const reason = invalid(delta, fixes);
     if (reason) { rejected.push({ delta, reason }); continue; }
     if (delta.op === "project_fix") {
@@ -109,8 +129,6 @@ function merge(key, deltasFile, worktree, fromCli) {
       entry.last_seen = at;
       entry.archived = false;
     }
-    const current = entries[delta.id];
-    if (current.seen >= ACTIVE_AT && !current.applied_at) current.applied_at = at;
     applied.push(delta);
   }
   for (const store of Object.values(data)) {
@@ -119,11 +137,7 @@ function merge(key, deltasFile, worktree, fromCli) {
     }
   }
   for (const [scope, file] of Object.entries(files)) writeJson(file, data[scope]);
-  const signals = path.join(dir, "signals.jsonl");
-  try {
-    const rest = fs.readFileSync(signals).subarray(state.review_offset || 0);
-    fs.writeFileSync(signals, rest);
-  } catch {}
+  try { consume(dir, state.review_offset || 0); } catch {}
   delete state.review_offset;
   state.last_merge_at = at;
   state.rejected = [...(state.rejected || []), ...rejected.map((r) => ({ at, ...r }))].slice(-20);

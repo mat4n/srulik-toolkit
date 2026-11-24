@@ -20,10 +20,13 @@ const iso = (ms) => new Date(ms).toISOString();
 function readJson(file, fallback) {
   try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return fallback; }
 }
+// Signals hold prompts and command output, so state is owner-only.
+const PRIVATE_DIR = { recursive: true, mode: 0o700 };
+const PRIVATE_FILE = { mode: 0o600 };
 function writeJson(file, data) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.mkdirSync(path.dirname(file), PRIVATE_DIR);
   const temporary = `${file}.${process.pid}`;
-  fs.writeFileSync(temporary, `${JSON.stringify(data, null, 2)}\n`);
+  fs.writeFileSync(temporary, `${JSON.stringify(data, null, 2)}\n`, PRIVATE_FILE);
   fs.renameSync(temporary, file);
 }
 function git(cwd, args, timeout = 5000) {
@@ -46,10 +49,43 @@ function active(projectDir) {
   const entries = [];
   for (const [scope, file] of Object.entries(stores(projectDir))) {
     for (const entry of Object.values(readJson(file, { entries: {} }).entries || {})) {
-      if (entry.seen >= ACTIVE_AT && !entry.archived) entries.push({ ...entry, scope });
+      const fresh = now() - Date.parse(entry.last_seen) <= PRUNE_DAYS * DAY;
+      if (entry.seen >= ACTIVE_AT && !entry.archived && fresh) entries.push({ ...entry, scope });
     }
   }
   return entries.sort((a, b) => b.seen - a.seen || String(b.last_seen).localeCompare(String(a.last_seen))).slice(0, CAP);
+}
+
+// The user stores are shared by every project, so their read-modify-write runs under one lock.
+function withStores(waitMs, fn) {
+  const file = path.join(root(), "stores.lock");
+  fs.mkdirSync(root(), PRIVATE_DIR);
+  const until = Date.now() + waitMs;
+  for (;;) {
+    try { fs.mkdirSync(file); break; } catch {
+      try {
+        if (Date.now() - fs.statSync(file).mtimeMs > 10 * 60_000) { fs.rmSync(file, { recursive: true, force: true }); continue; }
+      } catch { continue; }
+      if (Date.now() >= until) return false;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+    }
+  }
+  try { fn(); } finally { fs.rmSync(file, { recursive: true, force: true }); }
+  return true;
+}
+
+// Recurrence only counts once a lesson has actually been in session context.
+function markApplied(projectDir, entries) {
+  const pending = entries.filter((e) => !e.applied_at);
+  if (!pending.length) return;
+  withStores(500, () => {
+    for (const [scope, file] of Object.entries(stores(projectDir))) {
+      const data = readJson(file, null);
+      const hits = pending.filter((e) => e.scope === scope && data?.entries?.[e.id] && !data.entries[e.id].applied_at);
+      for (const e of hits) data.entries[e.id].applied_at = iso(now());
+      if (hits.length) writeJson(file, data);
+    }
+  });
 }
 
 function lock(dir) {
@@ -85,4 +121,4 @@ function onPath(name) {
   return false;
 }
 
-module.exports = { DAY, MARKER, INBOX, CAP, ACTIVE_AT, PRUNE_DAYS, LOCK_STALE, root, off, now, iso, readJson, writeJson, git, project, stores, active, lock, real, onPath };
+module.exports = { DAY, MARKER, INBOX, CAP, ACTIVE_AT, PRUNE_DAYS, LOCK_STALE, PRIVATE_DIR, PRIVATE_FILE, root, off, now, iso, readJson, writeJson, git, project, stores, active, withStores, markApplied, lock, real, onPath };

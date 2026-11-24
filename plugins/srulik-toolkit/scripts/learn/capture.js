@@ -1,13 +1,18 @@
 // Hook capture: classify a prompt or failed check and log a redacted signal.
 const fs = require("node:fs");
 const path = require("node:path");
-const { MARKER, off, now, iso, project } = require("./core");
+const { MARKER, PRIVATE_DIR, PRIVATE_FILE, off, now, iso, project } = require("./core");
 
+const SECRET_NAME = "(?:password|passwd|token|secret|api[_-]?key|access[_-]?key|private[_-]?key|credentials?)";
+const VALUE = `("[^"]*"|'[^']*'|\\S+)`;
 function redact(text) {
   return String(text)
+    .replace(/\b([a-z][a-z0-9+.-]*:\/\/)[^\s/@:]+:[^\s/@]+@/gi, "$1[redacted]@")
     .replace(/\b(?:sk-|ghp_|gho_|ghs_|github_pat_|xox[abpr]-|AKIA|glpat-)[A-Za-z0-9_-]{8,}/g, "[redacted]")
     .replace(/\bBearer\s+\S+/gi, "Bearer [redacted]")
-    .replace(/\b(password|passwd|token|secret|api[_-]?key)(\s*[=:]\s*)\S+/gi, "$1$2[redacted]")
+    // Whole names such as NPM_TOKEN, and quoted values as one token.
+    .replace(new RegExp(`(\\b[A-Za-z0-9_]*${SECRET_NAME}[A-Za-z0-9_]*)(\\s*[=:]\\s*)${VALUE}`, "gi"), "$1$2[redacted]")
+    .replace(new RegExp(`(--?[A-Za-z0-9-]*${SECRET_NAME}[A-Za-z0-9-]*)(\\s+)${VALUE}`, "gi"), "$1$2[redacted]")
     .slice(0, 500);
 }
 
@@ -49,9 +54,9 @@ function capture(harness, event) {
   const signal = classify(event);
   if (!signal) return "";
   const { dir } = project(cwdOf(event));
-  fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(dir, PRIVATE_DIR);
   const line = { ts: iso(now()), harness, session: String(event.session_id || event.conversation_id || ""), kind: signal.kind, text: redact(signal.text) };
-  fs.appendFileSync(path.join(dir, "signals.jsonl"), `${JSON.stringify(line)}\n`);
+  fs.appendFileSync(path.join(dir, "signals.jsonl"), `${JSON.stringify(line)}\n`, PRIVATE_FILE);
   return "";
 }
 

@@ -5,7 +5,7 @@
 //        learn.js merge <project-key> <deltas-file> [worktree] | stats [project-key]
 const fs = require("node:fs");
 const path = require("node:path");
-const { DAY, off, now, iso, readJson, writeJson, git, project, active, lock } = require("./learn/core");
+const { DAY, off, now, iso, readJson, writeJson, git, project, active, markApplied, lock } = require("./learn/core");
 const { capture, cwdOf } = require("./learn/capture");
 const { cli, launch, review } = require("./learn/review");
 const { merge, stats } = require("./learn/merge");
@@ -20,6 +20,7 @@ function start(harness, event) {
   if (entries.length) {
     out.push("Srulik Toolkit learned lessons (apply when relevant):");
     for (const e of entries) out.push(e.scope === "override" ? `- When using \`${e.skill}\`: ${e.text}` : `- ${e.text}`);
+    markApplied(info.dir, entries);
   }
   const branches = (state.branches || []).filter((b) => info.top && git(info.top, ["rev-parse", "--verify", "--quiet", `refs/heads/${b.branch}`]));
   if (branches.length) {
