@@ -81,3 +81,12 @@ visual, scratchpad-only location.
 - Claude web app, Cursor, Oh My Pi, T3 Code: unverified.
 - No graded baseline benchmark; the change is a delivery rule, not output
   quality.
+
+## PR review
+
+Codex review of `10b9801` (P2): when a publish fails, the local fallback opened
+a page with no Mermaid script, so a browser showed raw diagram source. The
+reference now restores the core's pinned Mermaid import (or inline SVG when
+remote resources are forbidden) before opening the local file. Its contract
+line was removed once on purpose and validation rejected it. CodeRabbit
+reported no actionable comments.

@@ -49,6 +49,7 @@ for token in [
     "`artifact-design`",
     "same `file_path`",
     "leave out the Mermaid script import",
+    "add the core's pinned Mermaid import back before opening the local file",
     "Without that tool, or when a publish is refused, use the core fallback",
     "When the system prompt lists no scratchpad, use the core fallback",
     "skip `quickstart` and the Artifact types",
