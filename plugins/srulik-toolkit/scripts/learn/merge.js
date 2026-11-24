@@ -28,7 +28,7 @@ function commitFix(worktree, delta, info, state, fromCli) {
   if (!gitDir || gitDir === git(worktree, ["rev-parse", "--path-format=absolute", "--git-common-dir"])) return "not a linked worktree";
   const cwd = real(process.cwd());
   const tree = real(top);
-  if (!tree || tree === state.review_source) return "the user's own worktree";
+  if (!tree || (state.review_source && tree === real(state.review_source))) return "the user's own worktree";
   // A worktree made for this review is always newer than the launch.
   const born = fs.statSync(gitDir).birthtimeMs;
   if (born > 0 && state.last_launch?.at && born < Date.parse(state.last_launch.at)) return "worktree predates the review";
