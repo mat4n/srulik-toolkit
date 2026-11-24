@@ -108,7 +108,10 @@ affected users, callers, or data. A small diagram is included when it helps revi
 Existing `CONTEXT.md` and `CONTEXT-MAP.md` remain supported. Capture and TDD
 follow the project's selected vocabulary file; no existing project files are
 renamed automatically. When both files exist, the glossary owns terms and context
-retains background. `retro` continues to propose evidence-backed improvements
+retains background. Every `create-plan` grill checks the selected vocabulary and
+schedules resolved terms and accepted ADRs as plan tasks, including creation of a
+root `GLOSSARY.md` the first time a plan changes a repository without a vocabulary
+file or instructed domain map. `retro` continues to propose evidence-backed improvements
 for human review; a retrospective alone does not authorize environment changes.
 
 `ui-ux-review` extracts review criteria from Next Level Builder’s UI UX Pro Max.

@@ -129,7 +129,9 @@ print("Startup version checker passed")
 
 for relative in [
     "skills/to-project/EXTEND.md",
-    "skills/to-project/GLOSSARY-FORMAT.md",
+    "skills/create-plan/references/GLOSSARY-FORMAT.md",
+    "skills/create-plan/references/ADR-FORMAT.md",
+    "skills/create-plan/references/domain-modeling.md",
     "skills/to-project/templates.md",
     "skills/to-project/base-skills/capture-to-project/SKILL.md",
     "skills/to-project/base-skills/tidy-project/SKILL.md",

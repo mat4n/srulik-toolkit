@@ -24,7 +24,7 @@ doubt, isolate.
 ### 1. Orient
 Read only the existing contract: `AGENTS.md`, the selected vocabulary file, `TASKS.md`,
 `assets/sources.md`, and the ADR titles under `docs/adr/`. Load the current
-model. Select vocabulary with [GLOSSARY-FORMAT.md](GLOSSARY-FORMAT.md), preserving
+model. Select vocabulary with the [glossary format](../create-plan/references/GLOSSARY-FORMAT.md), preserving
 existing `CONTEXT.md` and context maps. Use the selected file in the steps below
 where `GLOSSARY.md` is named. Do not read the whole repo.
 
@@ -34,7 +34,7 @@ new input adds or contradicts relative to the loaded model. The existing docs
 answer the rest, let them shorten the grill. This is the deliberate inverse of
 new mode, where the grill is always full. Write decisions live as they settle:
 new or refined terms to `GLOSSARY.md`, new hard-to-reverse trade-offs to a new ADR
-(formats: GLOSSARY-FORMAT.md, ADR-FORMAT.md).
+(formats: [glossary](../create-plan/references/GLOSSARY-FORMAT.md), [ADR](../create-plan/references/ADR-FORMAT.md)).
 
 ### 3. Apply — append and refine, never clobber
 - **`GLOSSARY.md`**: append new terms. A term the grill re-settles is updated in

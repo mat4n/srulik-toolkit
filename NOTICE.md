@@ -141,3 +141,5 @@ The writing style of `make-it-verifiable` and the restyled `create-plan` and
 at the same revision: leading words, completion criteria, positive phrasing,
 one meaning in one place, progressive disclosure, and no-op pruning, applied
 in new wording.
+
+The `create-plan` domain-modeling reference adapts [Matt Pocock's domain-modeling skill](https://github.com/mattpocock/skills/tree/d80fa0f4ebe0c5714af0adf8670336065233ecc6/skills/engineering/domain-modeling) under the MIT License. The shared `GLOSSARY-FORMAT.md` and `ADR-FORMAT.md` derive from that work. The toolkit schedules glossary and ADR writes as plan tasks, follows each repository's vocabulary selection rules including `CONTEXT.md` compatibility, and schedules creation of a missing glossary once per repository. Copyright (c) 2026 Matt Pocock

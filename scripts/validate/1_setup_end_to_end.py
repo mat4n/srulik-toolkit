@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 root = pathlib.Path(sys.argv[1])
 plugin = root / "plugins" / "srulik-toolkit"
 version = (plugin / "VERSION").read_text(encoding="utf-8").strip()
-if version != "1.31.0":
+if version != "1.32.0":
     raise SystemExit("wrong packaged VERSION")
 expected = {
     "can-you-help",
@@ -86,6 +86,15 @@ for token in [
     "successful required checks, satisfied review requirements, zero unresolved review conversations",
     "no unaddressed actionable human or bot findings",
     "`MERGE READY` is intermediate progress when merging is authorized",
+    "**Several PRs or post-merge steps:**",
+    "each `MERGED` is intermediate progress",
+    "The terminal state is the plan's own Definition of Done",
+    "After each merge, start the next PR or step in the same turn",
+    "While in-scope work remains, end a turn only with an active watch",
+    "reference the issue there without closing it",
+    "after an intermediate PR, verify the issue is still open",
+    "A reply that lists open in-scope work is not a handoff",
+    "After the terminal state of the whole plan and monitoring cleanup",
     "These states do not satisfy the Definition of Done",
     "Carry the primary Definition of Done above into the plan",
     "continue immediately to maintenance",
