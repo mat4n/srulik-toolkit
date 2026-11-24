@@ -201,7 +201,7 @@ tour_contract = [
     "after the initial research",
     "materially change the tour's scope, chronology, or interpretation",
     "invoke `$show-me` for every completed tour",
-    "When `$show-me` publishes to the host's hosted page, use that link",
+    "when `$show-me` publishes to the host's hosted page, its host reference chooses the file location",
     "OS-managed temporary path outside the repository",
     "Context-encode every untrusted topic, repository, and research value",
     "keep scripts static and trusted, and load no remote resources",

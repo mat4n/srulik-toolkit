@@ -29,9 +29,12 @@ for token in ["Bash(", "Claude", "Codex", "Cursor", "T3"]:
 
 # show-me: HTML goes to the host's hosted page when one exists; the Claude Code mapping lives in a reference.
 for token in [
-    "When the host offers a private, shareable hosted page",
-    "update the page you already published on the same topic in this conversation",
-    "Host mapping: [references/claude-code.md](references/claude-code.md)",
+    "When a host reference documents a host-native private, shareable hosted page",
+    "when you revise a visual you already published in this conversation, update that page",
+    "Do not publish when the user asked for the file itself",
+    "say it is untested, and publish only after the user confirms",
+    "Otherwise, or when publishing fails, open the file",
+    "Host references: [references/claude-code.md](references/claude-code.md)",
 ]:
     if token not in show_me:
         raise SystemExit(f"show-me is missing: {token}")
@@ -46,6 +49,12 @@ for token in [
     "`artifact-design`",
     "same `file_path`",
     "leave out the Mermaid script import",
+    "Without that tool, or when a publish is refused, use the core fallback",
+    "When the system prompt lists no scratchpad, use the core fallback",
+    "skip `quickstart` and the Artifact types",
+    "When the caller forbids remote resources, also skip web fonts and CDN scripts",
+    "do not also open the local file",
+    "Never publish a page that imitates",
     "Observed with Claude Code",
 ]:
     if token not in show_me_claude_text:
