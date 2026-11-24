@@ -68,7 +68,11 @@ function lock(dir) {
 }
 
 function real(file) {
-  try { return fs.realpathSync(file); } catch { return null; }
+  // native expands Windows 8.3 short names, which git never reports.
+  try {
+    const full = fs.realpathSync.native(file);
+    return process.platform === "win32" ? full.toLowerCase() : full;
+  } catch { return null; }
 }
 
 function onPath(name) {
