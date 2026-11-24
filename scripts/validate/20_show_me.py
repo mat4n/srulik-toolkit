@@ -26,3 +26,27 @@ for token in [
 for token in ["Bash(", "Claude", "Codex", "Cursor", "T3"]:
     if token in show_me:
         raise SystemExit(f"show-me core must stay host-neutral: {token}")
+
+# show-me: HTML goes to the host's hosted page when one exists; the Claude Code mapping lives in a reference.
+for token in [
+    "When the host offers a private, shareable hosted page",
+    "update the page you already published on the same topic in this conversation",
+    "Host mapping: [references/claude-code.md](references/claude-code.md)",
+]:
+    if token not in show_me:
+        raise SystemExit(f"show-me is missing: {token}")
+if "`Artifact`" in show_me or "artifact-design" in show_me:
+    raise SystemExit("show-me core must stay host-neutral: name the hosted page, not the tool")
+show_me_claude = skill_root / "show-me" / "references" / "claude-code.md"
+if not show_me_claude.is_file():
+    raise SystemExit("show-me is missing references/claude-code.md")
+show_me_claude_text = show_me_claude.read_text(encoding="utf-8")
+for token in [
+    "`Artifact`",
+    "`artifact-design`",
+    "same `file_path`",
+    "leave out the Mermaid script import",
+    "Observed with Claude Code",
+]:
+    if token not in show_me_claude_text:
+        raise SystemExit(f"show-me Claude Code reference is missing: {token}")
