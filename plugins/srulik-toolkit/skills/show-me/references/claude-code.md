@@ -17,7 +17,7 @@ Claude Code's hosted page is an Artifact: a private page on claude.ai the user c
 - Write the HTML in the session's scratchpad directory. The `Artifact` tool only publishes files from the scratchpad or the working directory, and a file in the working directory can end up committed. When the system prompt lists no scratchpad, use the core fallback.
 - Make a plain untyped page: skip `quickstart` and the Artifact types, and build a short deck inside the page itself, so the same `file_path` always updates it.
 - `artifact-design` sets the page contract: a two-to-four-word `<title>`, color tokens with a dark-mode variant, no `<html>`, `<head>` or `<body>` tags of your own, scripts only from allowed CDNs with exact versions.
-- Artifacts render `<pre class="mermaid">` blocks natively. Keep the escaped Mermaid source and leave out the Mermaid script import. If the publish is refused or fails, add the core's pinned Mermaid import back before opening the local file, or draw inline SVG when remote resources are forbidden.
+- Artifacts render `<pre class="mermaid">` blocks natively. Keep the Mermaid source encoded as the core describes and leave out the core's Mermaid scripts. If the publish is refused or fails, add the core's pinned Mermaid scripts back before opening the local file, or draw inline SVG when remote resources are forbidden.
 - When the caller forbids remote resources, also skip web fonts and CDN scripts, even where `artifact-design` suggests them; use system font stacks.
 - Pages start private. Publishing is the default for show-me's HTML; do not also open the local file.
 - Never publish a page that imitates a real person or organization, or content the user marked as sensitive. Give the local path instead.

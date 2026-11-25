@@ -22,7 +22,7 @@ tour path were not exercised live (see Gaps).
 - `tour/SKILL.md`: when show-me publishes, show-me's host reference chooses the
   file location and tour uses the link. Otherwise tour's temporary-path rule
   applies as before.
-- Version `1.31.1` -> `1.32.0`.
+- Version `1.33.0` -> `1.34.0` (rebased on #116, which took 1.32.0).
 
 ## Source and checks
 
